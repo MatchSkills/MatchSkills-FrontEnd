@@ -1,0 +1,65 @@
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { ENV } from './env';
+
+export const apiClient = axios.create({
+  baseURL: ENV.API_URL,
+  withCredentials: true, // inclui HttpOnly cookies
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+let inMemoryToken: string | null = null;
+
+export const setAccessToken = (token: string | null) => {
+  inMemoryToken = token;
+};
+
+export const getAccessToken = () => inMemoryToken;
+
+// Request interceptor: add Bearer token
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    if (inMemoryToken && config.headers) {
+      config.headers.Authorization = `Bearer ${inMemoryToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor: handle 401 & refresh
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshResponse = await axios.post(
+          `${ENV.API_URL}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+
+        const newAccessToken = refreshResponse.data?.accessToken;
+        if (newAccessToken) {
+          setAccessToken(newAccessToken);
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          }
+          return apiClient(originalRequest);
+        }
+      } catch (refreshError) {
+        setAccessToken(null);
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login/candidate';
+        }
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);

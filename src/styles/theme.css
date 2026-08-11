@@ -1,0 +1,42 @@
+:root {
+  --primary: #1e3a5f;
+  --primary-hover: #162b46;
+  --primary-light: #eff6ff;
+  --secondary: #ffffff;
+  --neutral: #a0aec0;
+  --neutral-light: #f1f5f9;
+  --neutral-dark: #475569;
+  
+  --bars-top: #10b981;
+  --bars-mid: #f59e0b;
+  --bars-low: #ef4444;
+
+  --bg-main: #f8fafc;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
