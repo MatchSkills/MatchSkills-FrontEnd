@@ -12,14 +12,14 @@ export const useJobs = (companyId?: string) => {
   const [totalElements, setTotalElements] = useState<number>(0);
 
   const fetchJobs = useCallback(
-    async (currentPage = 0) => {
+    async (currentPage = 0, search = '') => {
       setIsLoading(true);
       try {
         let result: PaginatedJobs;
         if (companyId) {
           result = await jobsService.getJobsByCompany(companyId, currentPage);
         } else {
-          result = await jobsService.getAllJobs(currentPage);
+          result = await jobsService.getAllJobs(currentPage, 10, search);
         }
         setJobs(result.content);
         setTotalPages(result.totalPages);

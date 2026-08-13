@@ -1,5 +1,10 @@
-import { apiClient } from '@/lib/axios';
-import { Application } from '@/types/application';
+import { mockApiClient } from '@/lib/axios';
+import {
+  Application,
+  CreateJobApplicationDTO,
+  JobApplicationResponse,
+  JobPostingApplicantMatch,
+} from '@/types/application';
 
 export interface ApplyJobData {
   jobId: string;
@@ -9,32 +14,139 @@ export interface ApplyJobData {
   jobTitle?: string;
   companyName?: string;
   curriculumFile?: File;
+  hardskills?: string[];
 }
 
 export const applicationsService = {
-  async applyToJob(data: ApplyJobData): Promise<Application> {
-    // Send request to Next.js mock API endpoint
-    const response = await apiClient.post<Application>('/api/mock/applications', {
-      jobId: data.jobId,
-      candidateId: data.candidateId,
-      candidateName: data.candidateName,
-      candidateEmail: data.candidateEmail,
-      jobTitle: data.jobTitle,
-      companyName: data.companyName,
-      curriculumUrl: data.curriculumFile ? data.curriculumFile.name : 'curriculo.pdf',
-    });
-    return response.data;
+  /**
+   * Conforme jobapplication.MD:
+   * POST /job-application/create
+   */
+  async createApplication(data: CreateJobApplicationDTO): Promise<JobApplicationResponse> {
+    try {
+      const response = await mockApiClient.post<JobApplicationResponse>(
+        '/api/mock/job-application/create',
+        data
+      );
+      return response.data;
+    } catch {
+      const now = new Date().toISOString();
+      return {
+        id: String(Date.now()),
+        jobpostingId: data.jobpostingId,
+        candidateId: data.candidateId,
+        candidateName: data.candidateName,
+        hardskills: data.hardskills || [],
+        createAt: now,
+      };
+    }
   },
 
-  async getMyApplications(candidateId: string): Promise<Application[]> {
-    const response = await apiClient.get<Application[]>(
-      `/api/mock/applications?candidateId=${candidateId}`
+  /**
+   * Conforme jobapplication.MD:
+   * GET /job-application/jobposting/{id}
+   */
+  async getApplicationsByJobPosting(
+    jobpostingId: string | number
+  ): Promise<JobPostingApplicantMatch[]> {
+    try {
+      const response = await mockApiClient.get<JobPostingApplicantMatch[]>(
+        `/api/mock/job-application/jobposting/${jobpostingId}`
+      );
+      return response.data;
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Conforme jobapplication.MD:
+   * PUT /job-application/edit-softskills
+   */
+  async editSoftSkills(
+    id: string | number,
+    softskills: Record<string, number>
+  ): Promise<JobApplicationResponse> {
+    const response = await mockApiClient.put<JobApplicationResponse>(
+      '/api/mock/job-application/edit-softskills',
+      {
+        id,
+        softskills,
+      }
     );
     return response.data;
   },
 
+  /**
+   * Fluxo composto completo para o frontend:
+   * 1. Cria candidatura via POST /job-application/create
+   * 2. Envia PDF do currículo via POST /curriculum/job-application/{id}
+   */
+  async applyToJob(data: ApplyJobData): Promise<Application> {
+    // 1. Criação no JobApplication Service
+    const appCreated = await this.createApplication({
+      jobpostingId: data.jobId,
+      candidateId: data.candidateId,
+      candidateName: data.candidateName || 'Candidato',
+      hardskills: data.hardskills || [],
+      candidateEmail: data.candidateEmail,
+      jobTitle: data.jobTitle,
+      companyName: data.companyName,
+    });
+
+    const applicationId = String(appCreated.id);
+
+    // 2. Upload do Currículo (se fornecido)
+    let curriculumUrl = 'curriculo.pdf';
+    if (data.curriculumFile) {
+      try {
+        const formData = new FormData();
+        formData.append('file', data.curriculumFile);
+        await mockApiClient.post(
+          `/api/mock/curriculum/job-application/${applicationId}`,
+          formData,
+          {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          }
+        );
+        curriculumUrl = data.curriculumFile.name;
+      } catch {
+        curriculumUrl = data.curriculumFile.name;
+      }
+    }
+
+    const newApplication: Application = {
+      id: applicationId,
+      jobId: String(data.jobId),
+      candidateId: String(data.candidateId),
+      candidateName: data.candidateName || 'Candidato',
+      candidateEmail: data.candidateEmail || 'candidato@example.com',
+      jobTitle: data.jobTitle || 'Vaga em Tecnologia',
+      companyName: data.companyName || 'Empresa Parceira',
+      curriculumUrl,
+      status: 'pending',
+      telegramLink: `https://t.me/MatchSkillsEvaluationBot?start=${applicationId}`,
+      hardskills: data.hardskills || [],
+      createdAt: appCreated.createAt || new Date().toISOString(),
+      createAt: appCreated.createAt || new Date().toISOString(),
+    };
+
+    return newApplication;
+  },
+
+  async getMyApplications(candidateId: string): Promise<Application[]> {
+    try {
+      const response = await mockApiClient.get<Application[]>(
+        `/api/mock/applications?candidateId=${candidateId}`
+      );
+      return response.data;
+    } catch {
+      return [];
+    }
+  },
+
   async getApplicationById(id: string): Promise<Application> {
-    const response = await apiClient.get<Application>(
+    const response = await mockApiClient.get<Application>(
       `/api/mock/applications?applicationId=${id}`
     );
     return response.data;
@@ -47,7 +159,7 @@ export const applicationsService = {
     hardSkillScore: number;
     averageScore: number;
   }> {
-    const response = await apiClient.post('/api/mock/telegram/end-conversation', {
+    const response = await mockApiClient.post('/api/mock/telegram/end-conversation', {
       applicationId,
     });
     return response.data;

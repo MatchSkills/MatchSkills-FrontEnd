@@ -12,18 +12,25 @@ import Link from 'next/link';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { jobs } = useJobs(user?.id);
+  const { jobs, isLoading: isJobsLoading } = useJobs(user?.id);
   const {
     jobId,
     setJobId,
     applicants,
     filters,
     setFilters,
-    isLoading,
+    isLoading: isRankingLoading,
     refreshRanking,
   } = useRanking(jobs[0]?.id || 'job_1');
 
+  React.useEffect(() => {
+    if (jobs.length > 0 && (!jobId || !jobs.some((j) => j.id === jobId))) {
+      setJobId(jobs[0].id);
+    }
+  }, [jobs, jobId, setJobId]);
+
   const selectedJobObj = jobs.find((j) => j.id === jobId) || jobs[0];
+  const isLoading = isJobsLoading || isRankingLoading;
 
   return (
     <div className="space-y-8">

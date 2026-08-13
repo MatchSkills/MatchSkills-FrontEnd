@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import { useJobs } from '@/hooks/useJobs';
 import {
   Briefcase,
@@ -17,7 +18,8 @@ import {
 import { toast } from 'sonner';
 
 export default function CreateJobPage() {
-  const { createJob, isLoading } = useJobs();
+  const { user } = useAuth();
+  const { createJob, isLoading } = useJobs(user?.id);
   const router = useRouter();
 
   const [title, setTitle] = useState('');
@@ -90,6 +92,8 @@ export default function CreateJobPage() {
         location,
         hardSkills,
         softSkills,
+        companyId: user?.id || 'comp_1',
+        companyName: user?.name || 'TechCorp Solutions',
       });
       router.push('/dashboard');
     } catch {

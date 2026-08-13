@@ -3,7 +3,7 @@
 import React from 'react';
 import { RankingApplicant } from '@/types/ranking';
 import { getBarsBadgeColor } from '@/utils/helpers';
-import { Award, BrainCircuit, Code, Sparkles, User, Zap } from 'lucide-react';
+import { Award, BrainCircuit, Code, FileText, Sparkles, User, Zap } from 'lucide-react';
 
 interface RankingTableProps {
   applicants: RankingApplicant[];
@@ -61,6 +61,17 @@ export const RankingTable: React.FC<RankingTableProps> = ({ applicants, isLoadin
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    {item.applicationId && (
+                      <a
+                        href={`/api/mock/curriculum/${item.applicationId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Ver Currículo (PDF)"
+                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                      </a>
+                    )}
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
                       {badge.icon} {item.softSkillScore} pts
                     </span>
@@ -100,6 +111,17 @@ export const RankingTable: React.FC<RankingTableProps> = ({ applicants, isLoadin
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    {item.applicationId && (
+                      <a
+                        href={`/api/mock/curriculum/${item.applicationId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Ver Currículo (PDF)"
+                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                      </a>
+                    )}
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
                       {badge.icon} {item.hardSkillScore} pts
                     </span>
@@ -139,6 +161,17 @@ export const RankingTable: React.FC<RankingTableProps> = ({ applicants, isLoadin
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    {item.applicationId && (
+                      <a
+                        href={`/api/mock/curriculum/${item.applicationId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Ver Currículo (PDF)"
+                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                      </a>
+                    )}
                     <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
                       {badge.icon} {item.averageScore} pts
                     </span>

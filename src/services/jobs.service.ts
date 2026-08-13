@@ -1,7 +1,50 @@
-import { apiClient } from '@/lib/axios';
+import { mockApiClient } from '@/lib/axios';
 import { CreateJobDTO, Job, PaginatedJobs, UpdateJobDTO } from '@/types/job';
 
-// Mock list of initial jobs for development/preview
+/**
+ * Normaliza objetos de vaga do backend (jobPosting.MD) para o formato padrão do frontend.
+ * Converte:
+ * - local -> location
+ * - createAt -> createdAt
+ * - targetHardskills -> hardSkills
+ * - targetSoftskills -> softSkills
+ */
+export const normalizeJob = (raw: any): Job => {
+  if (!raw) return raw;
+  return {
+    id: String(raw.id || `job_${Date.now()}`),
+    companyId: String(raw.companyId || 'comp_1'),
+    companyName: raw.companyName || 'Empresa Parceira',
+    title: raw.title || '',
+    description: raw.description || '',
+    location: raw.local || raw.location || '',
+    hardSkills: raw.targetHardskills || raw.hardSkills || [],
+    softSkills: raw.targetSoftskills || raw.softSkills || {},
+    status: raw.status || 'active',
+    salaryRange: raw.salaryRange || 'A combinar',
+    experienceLevel: raw.experienceLevel || 'Pleno/Sênior',
+    createdAt: raw.createAt || raw.createdAt || new Date().toISOString(),
+    // Preserva propriedades originais para interoperabilidade
+    local: raw.local || raw.location || '',
+    createAt: raw.createAt || raw.createdAt || new Date().toISOString(),
+    targetHardskills: raw.targetHardskills || raw.hardSkills || [],
+    targetSoftskills: raw.targetSoftskills || raw.softSkills || {},
+  };
+};
+
+/**
+ * Converte DTO do frontend para o formato esperado pelo backend em jobPosting.MD.
+ */
+export const toJobPostingPayload = (data: CreateJobDTO) => ({
+  companyId: String(data.companyId || 'comp_1'),
+  title: data.title,
+  description: data.description,
+  local: data.local || data.location || '',
+  targetHardskills: data.targetHardskills || data.hardSkills || [],
+  targetSoftskills: data.targetSoftskills || data.softSkills || {},
+});
+
+// Mock list of initial jobs for fallback / in-memory development
 const mockJobsList: Job[] = [
   {
     id: 'job_1',
@@ -13,6 +56,9 @@ const mockJobsList: Job[] = [
     location: 'São Paulo, SP (Híbrido)',
     hardSkills: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'Axios'],
     softSkills: { Comunicação: 5, Liderança: 4, 'Resolução de Problemas': 5, Proatividade: 4 },
+    status: 'active',
+    salaryRange: 'R$ 12.000 - R$ 16.000',
+    experienceLevel: 'Sênior',
     createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
   },
   {
@@ -25,6 +71,9 @@ const mockJobsList: Job[] = [
     location: 'Remoto',
     hardSkills: ['Python', 'PyTorch', 'LangChain', 'FastAPI', 'Docker'],
     softSkills: { 'Pensamento Crítico': 5, 'Trabalho em Equipe': 4, Autonomia: 5 },
+    status: 'active',
+    salaryRange: 'R$ 14.000 - R$ 18.000',
+    experienceLevel: 'Sênior / Especialista',
     createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
   },
   {
@@ -37,6 +86,9 @@ const mockJobsList: Job[] = [
     location: 'Florianópolis, SC (Remoto)',
     hardSkills: ['Node.js', 'React', 'PostgreSQL', 'Docker', 'Jest'],
     softSkills: { Organização: 4, Flexibilidade: 4, Empatia: 4 },
+    status: 'active',
+    salaryRange: 'R$ 8.000 - R$ 11.000',
+    experienceLevel: 'Pleno',
     createdAt: new Date(Date.now() - 86400000 * 1).toISOString(),
   },
 ];
@@ -44,11 +96,28 @@ const mockJobsList: Job[] = [
 export const jobsService = {
   async getJobsByCompany(companyId: string, page = 0, size = 10): Promise<PaginatedJobs> {
     try {
-      const response = await apiClient.get<PaginatedJobs>(
-        `/jobs/company/${companyId}?page=${page}&size=${size}`
+      const response = await mockApiClient.get<any>(
+        `/api/mock/jobs/company/${companyId}?page=${page}&size=${size}`
       );
-      return response.data;
-    } catch {
+      if (response.data?.content && response.data.content.length > 0) {
+        return {
+          content: response.data.content.map(normalizeJob),
+          totalElements: response.data.totalElements || response.data.content.length,
+          totalPages: response.data.totalPages || 1,
+          page: response.data.page ?? response.data.number ?? page,
+          size: response.data.size ?? size,
+        };
+      }
+      const filtered = mockJobsList.filter((j) => j.companyId === companyId);
+      if (filtered.length > 0) {
+        return {
+          content: filtered,
+          totalElements: filtered.length,
+          totalPages: 1,
+          page,
+          size,
+        };
+      }
       return {
         content: mockJobsList,
         totalElements: mockJobsList.length,
@@ -56,18 +125,50 @@ export const jobsService = {
         page,
         size,
       };
+    } catch {
+      const filtered = mockJobsList.filter((j) => j.companyId === companyId);
+      const listToReturn = filtered.length > 0 ? filtered : mockJobsList;
+      return {
+        content: listToReturn,
+        totalElements: listToReturn.length,
+        totalPages: 1,
+        page,
+        size,
+      };
     }
   },
 
-  async getAllJobs(page = 0, size = 10): Promise<PaginatedJobs> {
+  async getAllJobs(page = 0, size = 10, search = ''): Promise<PaginatedJobs> {
     try {
-      const response = await apiClient.get<PaginatedJobs>(`/jobs?page=${page}&size=${size}`);
-      return response.data;
-    } catch {
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+        ...(search ? { search } : {}),
+      });
+      const response = await mockApiClient.get<any>(`/api/mock/jobs?${queryParams.toString()}`);
       return {
-        content: mockJobsList,
-        totalElements: mockJobsList.length,
-        totalPages: 1,
+        content: (response.data.content || []).map(normalizeJob),
+        totalElements: response.data.totalElements || 0,
+        totalPages: response.data.totalPages || 1,
+        page: response.data.page ?? response.data.number ?? page,
+        size: response.data.size ?? size,
+      };
+    } catch {
+      let filtered = [...mockJobsList];
+      if (search) {
+        const query = search.toLowerCase();
+        filtered = filtered.filter(
+          (job) =>
+            job.title.toLowerCase().includes(query) ||
+            job.companyName.toLowerCase().includes(query) ||
+            job.location.toLowerCase().includes(query) ||
+            job.hardSkills.some((s) => s.toLowerCase().includes(query))
+        );
+      }
+      return {
+        content: filtered,
+        totalElements: filtered.length,
+        totalPages: Math.ceil(filtered.length / size) || 1,
         page,
         size,
       };
@@ -76,8 +177,8 @@ export const jobsService = {
 
   async getJobById(id: string): Promise<Job> {
     try {
-      const response = await apiClient.get<Job>(`/jobs/${id}`);
-      return response.data;
+      const response = await mockApiClient.get<any>(`/api/mock/jobs/${id}`);
+      return normalizeJob(response.data);
     } catch {
       const found = mockJobsList.find((j) => j.id === id);
       if (!found) {
@@ -88,19 +189,27 @@ export const jobsService = {
   },
 
   async createJob(data: CreateJobDTO): Promise<Job> {
+    const payload = toJobPostingPayload(data);
     try {
-      const response = await apiClient.post<Job>('/jobs/create', data);
-      return response.data;
+      const response = await mockApiClient.post<any>('/api/mock/jobs', payload);
+      const normalized = normalizeJob(response.data);
+      if (normalized) {
+        mockJobsList.unshift(normalized);
+      }
+      return normalized;
     } catch {
       const newJob: Job = {
         id: `job_${Date.now()}`,
-        companyId: 'comp_1',
-        companyName: 'TechCorp Solutions',
+        companyId: String(data.companyId || 'comp_1'),
+        companyName: data.companyName || 'TechCorp Solutions',
         title: data.title,
         description: data.description,
-        location: data.location,
-        hardSkills: data.hardSkills,
-        softSkills: data.softSkills,
+        location: data.local || data.location || '',
+        hardSkills: data.targetHardskills || data.hardSkills || [],
+        softSkills: data.targetSoftskills || data.softSkills || {},
+        status: data.status || 'active',
+        salaryRange: data.salaryRange || 'A combinar',
+        experienceLevel: data.experienceLevel || 'Pleno/Sênior',
         createdAt: new Date().toISOString(),
       };
       mockJobsList.unshift(newJob);
@@ -109,9 +218,10 @@ export const jobsService = {
   },
 
   async updateJob(id: string, data: UpdateJobDTO): Promise<Job> {
+    const payload = toJobPostingPayload(data as CreateJobDTO);
     try {
-      const response = await apiClient.put<Job>(`/jobs/${id}/edit`, data);
-      return response.data;
+      const response = await mockApiClient.put<any>(`/api/mock/jobs/${id}`, payload);
+      return normalizeJob(response.data);
     } catch {
       const index = mockJobsList.findIndex((j) => j.id === id);
       if (index !== -1) {
@@ -124,7 +234,11 @@ export const jobsService = {
 
   async deleteJob(id: string): Promise<void> {
     try {
-      await apiClient.delete(`/jobs/${id}/delete`);
+      await mockApiClient.delete(`/api/mock/jobs/${id}`);
+      const index = mockJobsList.findIndex((j) => j.id === id);
+      if (index !== -1) {
+        mockJobsList.splice(index, 1);
+      }
     } catch {
       const index = mockJobsList.findIndex((j) => j.id === id);
       if (index !== -1) {

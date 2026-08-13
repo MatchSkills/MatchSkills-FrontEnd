@@ -10,6 +10,12 @@ export default function JobsListPage() {
   const { jobs, isLoading, page, totalPages, fetchJobs } = useJobs();
   const [searchTerm, setSearchTerm] = useState('');
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    fetchJobs(0, value);
+  };
+
   const filteredJobs = jobs.filter(
     (job) =>
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -40,7 +46,7 @@ export default function JobsListPage() {
             type="text"
             placeholder="Buscar por cargo, empresa ou tecnologia (ex: Next.js, React)..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearchChange}
             className="w-full rounded-2xl border border-white/10 bg-white text-slate-900 pl-12 pr-4 py-3 text-sm font-medium outline-none shadow-md placeholder:text-slate-400 focus:ring-2 focus:ring-blue-300"
           />
         </div>

@@ -9,6 +9,14 @@ export const apiClient = axios.create({
   },
 });
 
+export const mockApiClient = axios.create({
+  baseURL: '',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 let inMemoryToken: string | null = null;
 
 export const setAccessToken = (token: string | null) => {
@@ -16,6 +24,16 @@ export const setAccessToken = (token: string | null) => {
 };
 
 export const getAccessToken = () => inMemoryToken;
+
+mockApiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    if (inMemoryToken && config.headers) {
+      config.headers.Authorization = `Bearer ${inMemoryToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Request interceptor: add Bearer token
 apiClient.interceptors.request.use(
