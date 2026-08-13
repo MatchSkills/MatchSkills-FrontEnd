@@ -3,7 +3,7 @@ import { ENV } from './env';
 
 export const apiClient = axios.create({
   baseURL: ENV.API_URL,
-  withCredentials: true, // inclui HttpOnly cookies
+  timeout: 15000, // 15s timeout para lidar com cold-start do Render
   headers: {
     'Content-Type': 'application/json',
   },
@@ -38,10 +38,16 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        const storedRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('ms_refresh_token') : null;
         const refreshResponse = await axios.post(
           `${ENV.API_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
+          { refreshToken: storedRefreshToken || '' },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(inMemoryToken ? { Authorization: `Bearer ${inMemoryToken}` } : {}),
+            },
+          }
         );
 
         const newAccessToken = refreshResponse.data?.accessToken;

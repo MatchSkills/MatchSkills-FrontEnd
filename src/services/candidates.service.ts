@@ -3,33 +3,33 @@ import { Candidate } from '@/types/auth';
 
 export const candidatesService = {
   async getCandidateById(id: string): Promise<Candidate> {
-    try {
-      const response = await apiClient.get<Candidate>(`/candidates/${id}`);
-      return response.data;
-    } catch {
-      return {
-        id,
-        name: 'Lucas Silva',
-        email: 'lucas.silva@example.com',
-        role: 'candidate',
-        phone: '(11) 98765-4321',
-      };
-    }
+    const response = await apiClient.get<any>(`/candidates/${id}`);
+    const data = response.data;
+    return {
+      id: String(data.id),
+      name: data.name,
+      email: data.email,
+      role: 'candidate',
+      phone: data.number || data.phone || '',
+    };
   },
 
   async updateCandidate(id: string, data: Partial<Candidate>): Promise<Candidate> {
-    try {
-      const response = await apiClient.put<Candidate>(`/candidates/${id}`, data);
-      return response.data;
-    } catch {
-      return {
-        id,
-        name: data.name || 'Lucas Silva',
-        email: data.email || 'lucas.silva@example.com',
-        role: 'candidate',
-        phone: data.phone || '(11) 98765-4321',
-      };
-    }
+    const payload = {
+      id: Number(id) || id,
+      name: data.name,
+      email: data.email,
+      number: data.phone,
+    };
+    const response = await apiClient.put<any>('/candidates', payload);
+    const resData = response.data;
+    return {
+      id: String(resData.id || id),
+      name: resData.name || data.name || '',
+      email: resData.email || data.email || '',
+      role: 'candidate',
+      phone: resData.number || resData.phone || data.phone || '',
+    };
   },
 
   async deleteCandidate(id: string): Promise<void> {

@@ -84,8 +84,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await authService.loginCandidate(credentials);
       handleAuthSuccess(response);
-    } catch (error) {
-      toast.error('Credenciais inválidas. Verifique seu e-mail e senha.');
+    } catch (error: any) {
+      const serverMessage = error?.response?.data?.message || error?.response?.data?.error;
+      const errorMsg = serverMessage || 'Credenciais inválidas. Verifique seu e-mail e senha.';
+      toast.error(errorMsg);
       throw error;
     } finally {
       setIsLoading(false);
@@ -97,8 +99,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await authService.loginCompany(credentials);
       handleAuthSuccess(response);
-    } catch (error) {
-      toast.error('Credenciais inválidas. Verifique seu CNPJ e senha.');
+    } catch (error: any) {
+      const serverMessage = error?.response?.data?.message || error?.response?.data?.error;
+      const errorMsg = serverMessage || 'Credenciais inválidas. Verifique seu CNPJ e senha.';
+      toast.error(errorMsg);
       throw error;
     } finally {
       setIsLoading(false);
@@ -110,8 +114,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await authService.registerCandidate(data);
       handleAuthSuccess(response);
-    } catch (error) {
-      toast.error('Erro ao realizar cadastro. Tente novamente.');
+    } catch (error: any) {
+      const serverMessage = error?.response?.data?.message || error?.response?.data?.error;
+      const errorMsg = serverMessage || 'Erro ao realizar cadastro. Tente novamente.';
+      toast.error(errorMsg);
       throw error;
     } finally {
       setIsLoading(false);
@@ -123,8 +129,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await authService.registerCompany(data);
       handleAuthSuccess(response);
-    } catch (error) {
-      toast.error('Erro ao cadastrar empresa. Tente novamente.');
+    } catch (error: any) {
+      const serverMessage = error?.response?.data?.message || error?.response?.data?.error;
+      const errorMsg = serverMessage || 'Erro ao cadastrar empresa. Tente novamente.';
+      toast.error(errorMsg);
       throw error;
     } finally {
       setIsLoading(false);
