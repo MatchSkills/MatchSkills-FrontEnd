@@ -31,34 +31,47 @@ export const setAccessToken = (token: string | null) => {
   inMemoryToken = token;
 };
 
-export const getAccessToken = () => inMemoryToken;
+export const getAccessToken = (): string | null => {
+  if (inMemoryToken) return inMemoryToken;
+  if (typeof window !== 'undefined') {
+    return (
+      localStorage.getItem('matchskills_access_token') ||
+      localStorage.getItem('ms_access_token') ||
+      null
+    );
+  }
+  return null;
+};
 
 mockApiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (inMemoryToken && config.headers) {
-      config.headers.Authorization = `Bearer ${inMemoryToken}`;
+    const token = getAccessToken();
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Request interceptor: add Bearer token
+// Request interceptor: add Bearer token to jobPostingApiClient
 jobPostingApiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (inMemoryToken && config.headers) {
-      config.headers.Authorization = `Bearer ${inMemoryToken}`;
+    const token = getAccessToken();
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Request interceptor: add Bearer token
+// Request interceptor: add Bearer token to apiClient
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (inMemoryToken && config.headers) {
-      config.headers.Authorization = `Bearer ${inMemoryToken}`;
+    const token = getAccessToken();
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -75,14 +88,16 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const storedRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('ms_refresh_token') : null;
+        const storedRefreshToken =
+          typeof window !== 'undefined' ? localStorage.getItem('ms_refresh_token') : null;
+        const currentToken = getAccessToken();
         const refreshResponse = await axios.post(
           `${ENV.API_URL}/auth/refresh`,
           { refreshToken: storedRefreshToken || '' },
           {
             headers: {
               'Content-Type': 'application/json',
-              ...(inMemoryToken ? { Authorization: `Bearer ${inMemoryToken}` } : {}),
+              ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
             },
           }
         );
@@ -90,6 +105,9 @@ apiClient.interceptors.response.use(
         const newAccessToken = refreshResponse.data?.accessToken;
         if (newAccessToken) {
           setAccessToken(newAccessToken);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('matchskills_access_token', newAccessToken);
+          }
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           }
@@ -98,6 +116,7 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         setAccessToken(null);
         if (typeof window !== 'undefined') {
+          localStorage.removeItem('matchskills_access_token');
           window.location.href = '/login/candidate';
         }
         return Promise.reject(refreshError);
