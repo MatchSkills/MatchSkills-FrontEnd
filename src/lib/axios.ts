@@ -43,12 +43,11 @@ export const getAccessToken = (): string | null => {
   return null;
 };
 
-// Helper to set headers on requests
+// Helper to set headers on requests (Standard RFC 7235 Authorization header)
 const attachAuthHeaders = (config: InternalAxiosRequestConfig) => {
   const token = getAccessToken();
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
-    config.headers.Authentication = `Bearer ${token}`;
   }
   return config;
 };
@@ -77,7 +76,6 @@ const createAuthResponseInterceptor = (clientInstance: typeof apiClient) => asyn
             ...(currentToken
               ? {
                   Authorization: `Bearer ${currentToken}`,
-                  Authentication: `Bearer ${currentToken}`,
                 }
               : {}),
           },
@@ -92,7 +90,6 @@ const createAuthResponseInterceptor = (clientInstance: typeof apiClient) => asyn
         }
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          originalRequest.headers.Authentication = `Bearer ${newAccessToken}`;
         }
         return clientInstance(originalRequest);
       }
