@@ -11,8 +11,10 @@ import { Briefcase, Building2, ChevronDown, LayoutDashboard, PlusCircle, Sparkle
 import Link from 'next/link';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const { jobs, isLoading: isJobsLoading } = useJobs(user?.id);
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { jobs, isLoading: isJobsLoading } = useJobs(user?.id, {
+    enabled: !isAuthLoading && !!user?.id,
+  });
   const {
     jobId,
     setJobId,
@@ -21,7 +23,7 @@ export default function DashboardPage() {
     setFilters,
     isLoading: isRankingLoading,
     refreshRanking,
-  } = useRanking(jobs[0]?.id || 'job_1');
+  } = useRanking(jobs[0]?.id || '');
 
   React.useEffect(() => {
     if (jobs.length > 0 && (!jobId || !jobs.some((j) => j.id === jobId))) {
@@ -30,7 +32,8 @@ export default function DashboardPage() {
   }, [jobs, jobId, setJobId]);
 
   const selectedJobObj = jobs.find((j) => j.id === jobId) || jobs[0];
-  const isLoading = isJobsLoading || isRankingLoading;
+  const isLoading = isAuthLoading || isJobsLoading || isRankingLoading;
+
 
   return (
     <div className="space-y-8">

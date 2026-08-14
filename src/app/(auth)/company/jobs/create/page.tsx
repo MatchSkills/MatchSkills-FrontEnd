@@ -18,8 +18,8 @@ import {
 import { toast } from 'sonner';
 
 export default function CreateJobPage() {
-  const { user } = useAuth();
-  const { createJob, isLoading } = useJobs(user?.id);
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { createJob, isLoading: isJobCreating } = useJobs(user?.id, { enabled: false });
   const router = useRouter();
 
   const [title, setTitle] = useState('');
@@ -84,6 +84,10 @@ export default function CreateJobPage() {
       toast.error('Adicione pelo menos 1 Soft Skill.');
       return;
     }
+    if (!user?.id) {
+      toast.error('Sessão da empresa não identificada. Por favor, faça login novamente.');
+      return;
+    }
 
     try {
       await createJob({
@@ -92,14 +96,16 @@ export default function CreateJobPage() {
         location,
         hardSkills,
         softSkills,
-        companyId: user?.id || 'comp_1',
-        companyName: user?.name || 'TechCorp Solutions',
+        companyId: String(user.id),
+        companyName: user.name || 'Empresa',
       });
       router.push('/dashboard');
     } catch {
-      // Handled in hook
+      // Erro exibido via toast no hook useJobs
     }
   };
+
+  const isLoading = isAuthLoading || isJobCreating;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -286,3 +292,4 @@ export default function CreateJobPage() {
     </div>
   );
 }
+

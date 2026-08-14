@@ -3,7 +3,12 @@ import { jobsService } from '@/services/jobs.service';
 import { CreateJobDTO, Job, PaginatedJobs, UpdateJobDTO } from '@/types/job';
 import { toast } from 'sonner';
 
-export const useJobs = (companyId?: string) => {
+export interface UseJobsOptions {
+  enabled?: boolean;
+}
+
+export const useJobs = (companyId?: string, options: UseJobsOptions = {}) => {
+  const { enabled = true } = options;
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -25,8 +30,13 @@ export const useJobs = (companyId?: string) => {
         setTotalPages(result.totalPages);
         setTotalElements(result.totalElements);
         setPage(result.page);
-      } catch (err) {
-        toast.error('Erro ao carregar lista de vagas.');
+      } catch (err: any) {
+        const errorMsg =
+          err?.response?.data?.message ||
+          (err?.response?.status === 403
+            ? 'Acesso não autorizado para visualizar estas vagas.'
+            : 'Erro ao carregar lista de vagas.');
+        toast.error(errorMsg);
       } finally {
         setIsLoading(false);
       }
@@ -40,8 +50,9 @@ export const useJobs = (companyId?: string) => {
       const data = await jobsService.getJobById(id);
       setSelectedJob(data);
       return data;
-    } catch (err) {
-      toast.error('Erro ao obter detalhes da vaga.');
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || 'Erro ao obter detalhes da vaga.';
+      toast.error(errorMsg);
       return null;
     } finally {
       setIsLoading(false);
@@ -55,8 +66,15 @@ export const useJobs = (companyId?: string) => {
       toast.success('Vaga criada com sucesso!');
       await fetchJobs(0);
       return newJob;
-    } catch (err) {
-      toast.error('Erro ao criar vaga.');
+    } catch (err: any) {
+      const errorMsg =
+        err?.response?.data?.message ||
+        (err?.response?.status === 403
+          ? 'Você não tem permissão para cadastrar vagas com esta conta de empresa.'
+          : err?.response?.status === 400
+            ? 'Parâmetros inválidos ao criar vaga. Verifique os dados.'
+            : 'Erro ao criar vaga no servidor.');
+      toast.error(errorMsg);
       throw err;
     } finally {
       setIsLoading(false);
@@ -69,8 +87,9 @@ export const useJobs = (companyId?: string) => {
       const updated = await jobsService.updateJob(id, data);
       toast.success('Vaga atualizada!');
       return updated;
-    } catch (err) {
-      toast.error('Erro ao atualizar vaga.');
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || 'Erro ao atualizar vaga.';
+      toast.error(errorMsg);
       throw err;
     } finally {
       setIsLoading(false);
@@ -83,16 +102,19 @@ export const useJobs = (companyId?: string) => {
       await jobsService.deleteJob(id);
       toast.success('Vaga removida com sucesso.');
       await fetchJobs(page);
-    } catch (err) {
-      toast.error('Erro ao remover vaga.');
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || 'Erro ao remover vaga.';
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchJobs(0);
-  }, [fetchJobs]);
+    if (enabled) {
+      fetchJobs(0);
+    }
+  }, [fetchJobs, enabled]);
 
   return {
     jobs,
@@ -109,3 +131,4 @@ export const useJobs = (companyId?: string) => {
     setPage,
   };
 };
+
