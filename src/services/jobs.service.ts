@@ -237,7 +237,13 @@ export const jobsService = {
         mockJobsList.unshift(normalized);
       }
       return normalized;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[jobsService.createJob] Erro na requisição:', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+      });
+
       // Se falhar o backend real, gera vaga fallback e adiciona em memória para dev
       const newJob: Job = {
         id: `job_${Date.now()}`,
