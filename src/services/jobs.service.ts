@@ -1,4 +1,4 @@
-import { mockApiClient } from '@/lib/axios';
+import { jobPostingApiClient, mockApiClient } from '@/lib/axios';
 import { CreateJobDTO, Job, PaginatedJobs, UpdateJobDTO } from '@/types/job';
 
 /**
@@ -24,7 +24,7 @@ export const normalizeJob = (raw: any): Job => {
     salaryRange: raw.salaryRange || 'A combinar',
     experienceLevel: raw.experienceLevel || 'Pleno/Sênior',
     createdAt: raw.createAt || raw.createdAt || new Date().toISOString(),
-    // Preserva propriedades originais para interoperabilidade
+    // Preserva propriedades originais para interoperabilidade direta com jobPosting.MD
     local: raw.local || raw.location || '',
     createAt: raw.createAt || raw.createdAt || new Date().toISOString(),
     targetHardskills: raw.targetHardskills || raw.hardSkills || [],
@@ -33,7 +33,7 @@ export const normalizeJob = (raw: any): Job => {
 };
 
 /**
- * Converte DTO do frontend para o formato esperado pelo backend em jobPosting.MD.
+ * Converte DTO do frontend para o formato de payload esperado pelo backend (jobPosting.MD).
  */
 export const toJobPostingPayload = (data: CreateJobDTO) => ({
   companyId: String(data.companyId || 'comp_1'),
@@ -44,7 +44,7 @@ export const toJobPostingPayload = (data: CreateJobDTO) => ({
   targetSoftskills: data.targetSoftskills || data.softSkills || {},
 });
 
-// Mock list of initial jobs for fallback / in-memory development
+// Lista de vagas em memória como fallback defensivo
 const mockJobsList: Job[] = [
   {
     id: 'job_1',
@@ -94,50 +94,57 @@ const mockJobsList: Job[] = [
 ];
 
 export const jobsService = {
+  /**
+   * Obtém vagas por empresa a partir da API real (/jobs/company/{id})
+   */
   async getJobsByCompany(companyId: string, page = 0, size = 10): Promise<PaginatedJobs> {
     try {
-      const response = await mockApiClient.get<any>(
-        `/api/mock/jobs/company/${companyId}?page=${page}&size=${size}`
+      const response = await jobPostingApiClient.get<any>(
+        `/jobs/company/${companyId}?page=${page}&size=${size}`
       );
-      if (response.data?.content && response.data.content.length > 0) {
+      if (response.data?.content) {
         return {
           content: response.data.content.map(normalizeJob),
-          totalElements: response.data.totalElements || response.data.content.length,
-          totalPages: response.data.totalPages || 1,
+          totalElements: response.data.totalElements ?? response.data.content.length,
+          totalPages: response.data.totalPages ?? 1,
           page: response.data.page ?? response.data.number ?? page,
           size: response.data.size ?? size,
         };
       }
-      const filtered = mockJobsList.filter((j) => j.companyId === companyId);
-      if (filtered.length > 0) {
-        return {
-          content: filtered,
-          totalElements: filtered.length,
-          totalPages: 1,
-          page,
-          size,
-        };
-      }
-      return {
-        content: mockJobsList,
-        totalElements: mockJobsList.length,
-        totalPages: 1,
-        page,
-        size,
-      };
     } catch {
-      const filtered = mockJobsList.filter((j) => j.companyId === companyId);
-      const listToReturn = filtered.length > 0 ? filtered : mockJobsList;
-      return {
-        content: listToReturn,
-        totalElements: listToReturn.length,
-        totalPages: 1,
-        page,
-        size,
-      };
+      // Tenta fallback via mockApiClient se disponível
+      try {
+        const mockResponse = await mockApiClient.get<any>(
+          `/api/mock/jobs/company/${companyId}?page=${page}&size=${size}`
+        );
+        if (mockResponse.data?.content) {
+          return {
+            content: mockResponse.data.content.map(normalizeJob),
+            totalElements: mockResponse.data.totalElements || mockResponse.data.content.length,
+            totalPages: mockResponse.data.totalPages || 1,
+            page: mockResponse.data.page ?? mockResponse.data.number ?? page,
+            size: mockResponse.data.size ?? size,
+          };
+        }
+      } catch {
+        // Fallback local em memória
+      }
     }
+
+    const filtered = mockJobsList.filter((j) => j.companyId === companyId);
+    const listToReturn = filtered.length > 0 ? filtered : mockJobsList;
+    return {
+      content: listToReturn,
+      totalElements: listToReturn.length,
+      totalPages: 1,
+      page,
+      size,
+    };
   },
 
+  /**
+   * Obtém todas as vagas com paginação (/jobs)
+   */
   async getAllJobs(page = 0, size = 10, search = ''): Promise<PaginatedJobs> {
     try {
       const queryParams = new URLSearchParams({
@@ -145,59 +152,93 @@ export const jobsService = {
         size: String(size),
         ...(search ? { search } : {}),
       });
-      const response = await mockApiClient.get<any>(`/api/mock/jobs?${queryParams.toString()}`);
-      return {
-        content: (response.data.content || []).map(normalizeJob),
-        totalElements: response.data.totalElements || 0,
-        totalPages: response.data.totalPages || 1,
-        page: response.data.page ?? response.data.number ?? page,
-        size: response.data.size ?? size,
-      };
-    } catch {
-      let filtered = [...mockJobsList];
-      if (search) {
-        const query = search.toLowerCase();
-        filtered = filtered.filter(
-          (job) =>
-            job.title.toLowerCase().includes(query) ||
-            job.companyName.toLowerCase().includes(query) ||
-            job.location.toLowerCase().includes(query) ||
-            job.hardSkills.some((s) => s.toLowerCase().includes(query))
-        );
+      const response = await jobPostingApiClient.get<any>(`/jobs?${queryParams.toString()}`);
+      if (response.data?.content) {
+        return {
+          content: (response.data.content || []).map(normalizeJob),
+          totalElements: response.data.totalElements || 0,
+          totalPages: response.data.totalPages || 1,
+          page: response.data.page ?? response.data.number ?? page,
+          size: response.data.size ?? size,
+        };
       }
-      return {
-        content: filtered,
-        totalElements: filtered.length,
-        totalPages: Math.ceil(filtered.length / size) || 1,
-        page,
-        size,
-      };
+    } catch {
+      try {
+        const queryParams = new URLSearchParams({
+          page: String(page),
+          size: String(size),
+          ...(search ? { search } : {}),
+        });
+        const mockResponse = await mockApiClient.get<any>(`/api/mock/jobs?${queryParams.toString()}`);
+        if (mockResponse.data?.content) {
+          return {
+            content: (mockResponse.data.content || []).map(normalizeJob),
+            totalElements: mockResponse.data.totalElements || 0,
+            totalPages: mockResponse.data.totalPages || 1,
+            page: mockResponse.data.page ?? mockResponse.data.number ?? page,
+            size: mockResponse.data.size ?? size,
+          };
+        }
+      } catch {
+        // Fallback local
+      }
     }
+
+    let filtered = [...mockJobsList];
+    if (search) {
+      const query = search.toLowerCase();
+      filtered = filtered.filter(
+        (job) =>
+          job.title.toLowerCase().includes(query) ||
+          job.companyName.toLowerCase().includes(query) ||
+          job.location.toLowerCase().includes(query) ||
+          job.hardSkills.some((s) => s.toLowerCase().includes(query))
+      );
+    }
+    return {
+      content: filtered,
+      totalElements: filtered.length,
+      totalPages: Math.ceil(filtered.length / size) || 1,
+      page,
+      size,
+    };
   },
 
+  /**
+   * Obtém detalhes de uma vaga por ID (/jobs/{id})
+   */
   async getJobById(id: string): Promise<Job> {
     try {
-      const response = await mockApiClient.get<any>(`/api/mock/jobs/${id}`);
+      const response = await jobPostingApiClient.get<any>(`/jobs/${id}`);
       return normalizeJob(response.data);
     } catch {
-      const found = mockJobsList.find((j) => j.id === id);
-      if (!found) {
-        throw new Error('Vaga não encontrada');
+      try {
+        const mockResponse = await mockApiClient.get<any>(`/api/mock/jobs/${id}`);
+        return normalizeJob(mockResponse.data);
+      } catch {
+        const found = mockJobsList.find((j) => j.id === id);
+        if (!found) {
+          throw new Error('Vaga não encontrada');
+        }
+        return found;
       }
-      return found;
     }
   },
 
+  /**
+   * Cria uma nova vaga no serviço de vagas real: POST /jobs/create
+   */
   async createJob(data: CreateJobDTO): Promise<Job> {
     const payload = toJobPostingPayload(data);
     try {
-      const response = await mockApiClient.post<any>('/api/mock/jobs', payload);
+      const response = await jobPostingApiClient.post<any>('/jobs/create', payload);
       const normalized = normalizeJob(response.data);
       if (normalized) {
         mockJobsList.unshift(normalized);
       }
       return normalized;
-    } catch {
+    } catch (error) {
+      // Se falhar o backend real, gera vaga fallback e adiciona em memória para dev
       const newJob: Job = {
         id: `job_${Date.now()}`,
         companyId: String(data.companyId || 'comp_1'),
@@ -217,10 +258,13 @@ export const jobsService = {
     }
   },
 
+  /**
+   * Atualiza uma vaga existente: PUT /jobs/{id}/edit
+   */
   async updateJob(id: string, data: UpdateJobDTO): Promise<Job> {
     const payload = toJobPostingPayload(data as CreateJobDTO);
     try {
-      const response = await mockApiClient.put<any>(`/api/mock/jobs/${id}`, payload);
+      const response = await jobPostingApiClient.put<any>(`/jobs/${id}/edit`, { id, ...payload });
       return normalizeJob(response.data);
     } catch {
       const index = mockJobsList.findIndex((j) => j.id === id);
@@ -232,9 +276,12 @@ export const jobsService = {
     }
   },
 
+  /**
+   * Exclui uma vaga: DELETE /jobs/{id}/delete
+   */
   async deleteJob(id: string): Promise<void> {
     try {
-      await mockApiClient.delete(`/api/mock/jobs/${id}`);
+      await jobPostingApiClient.delete(`/jobs/${id}/delete`);
       const index = mockJobsList.findIndex((j) => j.id === id);
       if (index !== -1) {
         mockJobsList.splice(index, 1);

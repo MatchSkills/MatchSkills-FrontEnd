@@ -9,6 +9,14 @@ export const apiClient = axios.create({
   },
 });
 
+export const jobPostingApiClient = axios.create({
+  baseURL: ENV.JOB_POSTING_API_URL,
+  timeout: 15000, // 15s timeout para lidar com cold-start do Render
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 export const mockApiClient = axios.create({
   baseURL: '',
   timeout: 10000,
@@ -26,6 +34,17 @@ export const setAccessToken = (token: string | null) => {
 export const getAccessToken = () => inMemoryToken;
 
 mockApiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    if (inMemoryToken && config.headers) {
+      config.headers.Authorization = `Bearer ${inMemoryToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Request interceptor: add Bearer token
+jobPostingApiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (inMemoryToken && config.headers) {
       config.headers.Authorization = `Bearer ${inMemoryToken}`;
