@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCandidature } from '@/hooks/useCandidature';
 import { Job } from '@/types/job';
 import { TelegramDeepLink } from './TelegramDeepLink';
-import { Check, Code2, FileCheck, FileText, UploadCloud, User, X } from 'lucide-react';
+import { FileCheck, UploadCloud, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ApplicationModalProps {
@@ -17,18 +17,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({ job, onClose
   const { user } = useAuth();
   const { apply, isSubmitting, currentApplication } = useCandidature();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedSkills, setSelectedSkills] = useState<string[]>(
-    job.hardSkills || job.targetHardskills || []
-  );
   const [step, setStep] = useState<1 | 2>(1);
-
-  const toggleSkill = (skill: string) => {
-    if (selectedSkills.includes(skill)) {
-      setSelectedSkills(selectedSkills.filter((s) => s !== skill));
-    } else {
-      setSelectedSkills([...selectedSkills, skill]);
-    }
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -59,7 +48,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({ job, onClose
       candidateEmail: user?.email || 'candidato@example.com',
       jobTitle: job.title,
       companyName: job.companyName,
-      hardskills: selectedSkills,
+      hardskills: [],
       curriculumFile: selectedFile,
     });
 
@@ -101,35 +90,6 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({ job, onClose
                 <span className="text-slate-500">{user?.email || 'email@exemplo.com'}</span>
               </div>
             </div>
-
-            {/* Hard Skills Confirmation */}
-            {(job.hardSkills?.length > 0 || (job.targetHardskills && job.targetHardskills.length > 0)) && (
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Code2 className="h-4 w-4 text-blue-600" /> Suas Hard Skills para esta vaga
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {(job.hardSkills || job.targetHardskills || []).map((skill) => {
-                    const isSelected = selectedSkills.includes(skill);
-                    return (
-                      <button
-                        type="button"
-                        key={skill}
-                        onClick={() => toggleSkill(skill)}
-                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                          isSelected
-                            ? 'bg-blue-50 border-blue-300 text-blue-800 shadow-xs'
-                            : 'bg-white border-slate-200 text-slate-500 opacity-60 hover:opacity-100'
-                        }`}
-                      >
-                        {isSelected && <Check className="h-3 w-3 text-blue-600" />}
-                        {skill}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* PDF File Upload Zone */}
             <div className="space-y-2">
