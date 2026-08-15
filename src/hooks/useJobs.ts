@@ -11,7 +11,7 @@ export const useJobs = (companyId?: string, options: UseJobsOptions = {}) => {
   const { enabled = true } = options;
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(enabled);
   const [page, setPage] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalElements, setTotalElements] = useState<number>(0);
@@ -113,6 +113,8 @@ export const useJobs = (companyId?: string, options: UseJobsOptions = {}) => {
   useEffect(() => {
     if (enabled) {
       fetchJobs(0);
+    } else {
+      setIsLoading(false);
     }
   }, [fetchJobs, enabled]);
 

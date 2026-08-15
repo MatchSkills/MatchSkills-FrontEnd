@@ -19,9 +19,10 @@ import { toast } from 'sonner';
 
 export default function CreateJobPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const { createJob, isLoading: isJobCreating } = useJobs(user?.id, { enabled: false });
+  const { createJob } = useJobs(user?.id, { enabled: false });
   const router = useRouter();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -89,6 +90,7 @@ export default function CreateJobPage() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await createJob({
         title,
@@ -102,10 +104,10 @@ export default function CreateJobPage() {
       router.push('/dashboard');
     } catch {
       // Erro exibido via toast no hook useJobs
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  const isLoading = isAuthLoading || isJobCreating;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -281,10 +283,10 @@ export default function CreateJobPage() {
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting || isAuthLoading}
               className="px-7 py-3 rounded-xl bg-[#1e3a5f] text-xs font-bold text-white shadow-md hover:bg-[#162b46] active:scale-95 transition-all disabled:opacity-50"
             >
-              {isLoading ? 'Criando Vaga...' : 'Criar Vaga'}
+              {isSubmitting ? 'Criando Vaga...' : 'Criar Vaga'}
             </button>
           </div>
         </form>
