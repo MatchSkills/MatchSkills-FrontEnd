@@ -1,4 +1,4 @@
-import { mockApiClient } from '@/lib/axios';
+import { jobApplicationApiClient, mockApiClient } from '@/lib/axios';
 import {
   Application,
   CreateJobApplicationDTO,
@@ -7,8 +7,8 @@ import {
 } from '@/types/application';
 
 export interface ApplyJobData {
-  jobId: string;
-  candidateId: string;
+  jobId: string | number;
+  candidateId: string | number;
   candidateName?: string;
   candidateEmail?: string;
   jobTitle?: string;
@@ -20,43 +20,33 @@ export interface ApplyJobData {
 export const applicationsService = {
   /**
    * Conforme jobapplication.MD:
-   * POST /job-application/create
+   * POST /job-application/create (Candidate Role)
    */
   async createApplication(data: CreateJobApplicationDTO): Promise<JobApplicationResponse> {
-    try {
-      const response = await mockApiClient.post<JobApplicationResponse>(
-        '/api/mock/job-application/create',
-        data
-      );
-      return response.data;
-    } catch {
-      const now = new Date().toISOString();
-      return {
-        id: String(Date.now()),
-        jobpostingId: data.jobpostingId,
-        candidateId: data.candidateId,
-        candidateName: data.candidateName,
-        hardskills: data.hardskills || [],
-        createAt: now,
-      };
-    }
+    const payload = {
+      jobpostingId: isNaN(Number(data.jobpostingId)) ? data.jobpostingId : Number(data.jobpostingId),
+      candidateId: isNaN(Number(data.candidateId)) ? data.candidateId : Number(data.candidateId),
+      candidateName: data.candidateName,
+      hardskills: Array.isArray(data.hardskills) ? data.hardskills : [],
+    };
+    const response = await jobApplicationApiClient.post<JobApplicationResponse>(
+      '/job-application/create',
+      payload
+    );
+    return response.data;
   },
 
   /**
    * Conforme jobapplication.MD:
-   * GET /job-application/jobposting/{id}
+   * GET /job-application/jobposting/{id} (Company Role)
    */
   async getApplicationsByJobPosting(
     jobpostingId: string | number
   ): Promise<JobPostingApplicantMatch[]> {
-    try {
-      const response = await mockApiClient.get<JobPostingApplicantMatch[]>(
-        `/api/mock/job-application/jobposting/${jobpostingId}`
-      );
-      return response.data;
-    } catch {
-      return [];
-    }
+    const response = await jobApplicationApiClient.get<JobPostingApplicantMatch[]>(
+      `/job-application/jobposting/${jobpostingId}`
+    );
+    return response.data;
   },
 
   /**
@@ -67,10 +57,10 @@ export const applicationsService = {
     id: string | number,
     softskills: Record<string, number>
   ): Promise<JobApplicationResponse> {
-    const response = await mockApiClient.put<JobApplicationResponse>(
-      '/api/mock/job-application/edit-softskills',
+    const response = await jobApplicationApiClient.put<JobApplicationResponse>(
+      '/job-application/edit-softskills',
       {
-        id,
+        id: isNaN(Number(id)) ? id : Number(id),
         softskills,
       }
     );
@@ -83,7 +73,7 @@ export const applicationsService = {
    * 2. Envia PDF do currículo via POST /curriculum/job-application/{id}
    */
   async applyToJob(data: ApplyJobData): Promise<Application> {
-    // 1. Criação no JobApplication Service
+    // 1. Criação no JobApplication Service real
     const appCreated = await this.createApplication({
       jobpostingId: data.jobId,
       candidateId: data.candidateId,

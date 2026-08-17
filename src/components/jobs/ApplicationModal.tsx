@@ -41,14 +41,19 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({ job, onClose
       return;
     }
 
+    if (!user || !user.id) {
+      toast.error('Você precisa estar logado para se candidatar.');
+      return;
+    }
+
     const app = await apply({
       jobId: job.id,
-      candidateId: user?.id || '1',
-      candidateName: user?.name || 'Candidato Exemplo',
-      candidateEmail: user?.email || 'candidato@example.com',
+      candidateId: user.id,
+      candidateName: user.name || 'Candidato',
+      candidateEmail: user.email || '',
       jobTitle: job.title,
       companyName: job.companyName,
-      hardskills: [],
+      hardskills: job.hardSkills || job.targetHardskills || [],
       curriculumFile: selectedFile,
     });
 

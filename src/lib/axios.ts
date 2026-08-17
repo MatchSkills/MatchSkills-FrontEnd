@@ -17,6 +17,14 @@ export const jobPostingApiClient = axios.create({
   },
 });
 
+export const jobApplicationApiClient = axios.create({
+  baseURL: ENV.JOB_APPLICATION_API_URL,
+  timeout: 15000, // 15s timeout para lidar com cold-start do Render
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 export const mockApiClient = axios.create({
   baseURL: '',
   timeout: 10000,
@@ -54,6 +62,7 @@ const attachAuthHeaders = (config: InternalAxiosRequestConfig) => {
 
 mockApiClient.interceptors.request.use(attachAuthHeaders, (error) => Promise.reject(error));
 jobPostingApiClient.interceptors.request.use(attachAuthHeaders, (error) => Promise.reject(error));
+jobApplicationApiClient.interceptors.request.use(attachAuthHeaders, (error) => Promise.reject(error));
 apiClient.interceptors.request.use(attachAuthHeaders, (error) => Promise.reject(error));
 
 // Shared 401 refresh handler
@@ -105,9 +114,13 @@ const createAuthResponseInterceptor = (clientInstance: typeof apiClient) => asyn
   return Promise.reject(error);
 };
 
-// Response interceptor: handle 401 & refresh for both API clients
+// Response interceptor: handle 401 & refresh for all API clients
 apiClient.interceptors.response.use((response) => response, createAuthResponseInterceptor(apiClient));
 jobPostingApiClient.interceptors.response.use(
   (response) => response,
   createAuthResponseInterceptor(jobPostingApiClient)
+);
+jobApplicationApiClient.interceptors.response.use(
+  (response) => response,
+  createAuthResponseInterceptor(jobApplicationApiClient)
 );

@@ -15,6 +15,10 @@ export const ENV = {
     process.env.NEXT_PUBLIC_JOB_POSTING_API_URL,
     'https://matchskills-jobposting-service.onrender.com'
   ),
+  JOB_APPLICATION_API_URL: formatBaseUrl(
+    process.env.NEXT_PUBLIC_JOB_APPLICATION_API_URL,
+    'https://matchskills-jobapplication-service.onrender.com'
+  ),
   TELEGRAM_BOT_USERNAME: process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'MatchSkillsEvaluationBot',
   IS_DEV: process.env.NODE_ENV === 'development',
 };
