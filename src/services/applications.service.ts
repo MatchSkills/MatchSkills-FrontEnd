@@ -1,4 +1,5 @@
 import { jobApplicationApiClient, mockApiClient } from '@/lib/axios';
+import { curriculumService } from './curriculum.service';
 import {
   Application,
   CreateJobApplicationDTO,
@@ -90,17 +91,10 @@ export const applicationsService = {
     let curriculumUrl = 'curriculo.pdf';
     if (data.curriculumFile) {
       try {
-        const formData = new FormData();
-        formData.append('file', data.curriculumFile);
-        await mockApiClient.post(
-          `/api/mock/curriculum/job-application/${applicationId}`,
-          formData,
-          {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          }
-        );
+        await curriculumService.uploadCurriculum(applicationId, data.curriculumFile);
         curriculumUrl = data.curriculumFile.name;
-      } catch {
+      } catch (uploadError) {
+        console.error('Erro ao realizar upload do currículo:', uploadError);
         curriculumUrl = data.curriculumFile.name;
       }
     }

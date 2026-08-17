@@ -1,4 +1,4 @@
-import { mockApiClient } from '@/lib/axios';
+import { jobApplicationApiClient } from '@/lib/axios';
 import { CurriculumUploadResponse } from '@/types/curriculum';
 
 export const curriculumService = {
@@ -13,53 +13,34 @@ export const curriculumService = {
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
-      const response = await mockApiClient.post<CurriculumUploadResponse>(
-        `/api/mock/curriculum/job-application/${jobApplicationId}`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      return response.data;
-    } catch {
-      // Fallback gracioso para visualização local
-      return {
-        message: 'Upload de currículo realizado com sucesso',
-        jobApplicationId,
-        fileName: file.name,
-        fileSize: file.size,
-        uploadedAt: new Date().toISOString(),
-      };
-    }
+    const response = await jobApplicationApiClient.post<CurriculumUploadResponse>(
+      `/curriculum/job-application/${jobApplicationId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
   },
 
   /**
-   * Obtém a URL assinada para visualização/download do currículo:
+   * Obtém a URL assinada para visualização/download do currículo conforme curriculum.MD:
    * GET /curriculum/{id}
    */
   async getCurriculumDownloadUrl(id: string | number): Promise<string> {
-    try {
-      const response = await mockApiClient.get<string>(`/api/mock/curriculum/${id}`, {
-        responseType: 'text',
-      });
-      return response.data || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
-    } catch {
-      return 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
-    }
+    const response = await jobApplicationApiClient.get<string>(`/curriculum/${id}`, {
+      responseType: 'text',
+    });
+    return response.data;
   },
 
   /**
-   * Remove o currículo cadastrado:
+   * Remove o currículo cadastrado conforme curriculum.MD:
    * DELETE /curriculum/{id}
    */
   async deleteCurriculum(id: string | number): Promise<void> {
-    try {
-      await mockApiClient.delete(`/api/mock/curriculum/${id}`);
-    } catch {
-      // Fallback sem erro
-    }
+    await jobApplicationApiClient.delete(`/curriculum/${id}`);
   },
 };

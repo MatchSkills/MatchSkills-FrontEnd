@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
+import { curriculumService } from '@/services/curriculum.service';
 import { RankingApplicant } from '@/types/ranking';
 import { getBarsBadgeColor } from '@/utils/helpers';
 import { Award, BrainCircuit, Code, FileText, Sparkles, User, Zap } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface RankingTableProps {
   applicants: RankingApplicant[];
@@ -11,6 +13,16 @@ interface RankingTableProps {
 }
 
 export const RankingTable: React.FC<RankingTableProps> = ({ applicants, isLoading }) => {
+  const handleOpenCurriculum = async (applicationId: string) => {
+    try {
+      const url = await curriculumService.getCurriculumDownloadUrl(applicationId);
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    } catch {
+      toast.error('Não foi possível obter o link do currículo.');
+    }
+  };
   if (applicants.length === 0 && !isLoading) {
     return (
       <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
@@ -62,15 +74,13 @@ export const RankingTable: React.FC<RankingTableProps> = ({ applicants, isLoadin
 
                   <div className="flex items-center gap-2 shrink-0">
                     {item.applicationId && (
-                      <a
-                        href={`/api/mock/curriculum/${item.applicationId}`}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        onClick={() => handleOpenCurriculum(item.applicationId)}
                         title="Ver Currículo (PDF)"
-                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
                       >
                         <FileText className="h-3.5 w-3.5" />
-                      </a>
+                      </button>
                     )}
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
                       {badge.icon} {item.softSkillScore} pts
@@ -112,15 +122,13 @@ export const RankingTable: React.FC<RankingTableProps> = ({ applicants, isLoadin
 
                   <div className="flex items-center gap-2 shrink-0">
                     {item.applicationId && (
-                      <a
-                        href={`/api/mock/curriculum/${item.applicationId}`}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        onClick={() => handleOpenCurriculum(item.applicationId)}
                         title="Ver Currículo (PDF)"
-                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
                       >
                         <FileText className="h-3.5 w-3.5" />
-                      </a>
+                      </button>
                     )}
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
                       {badge.icon} {item.hardSkillScore} pts
@@ -162,15 +170,13 @@ export const RankingTable: React.FC<RankingTableProps> = ({ applicants, isLoadin
 
                   <div className="flex items-center gap-2 shrink-0">
                     {item.applicationId && (
-                      <a
-                        href={`/api/mock/curriculum/${item.applicationId}`}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        onClick={() => handleOpenCurriculum(item.applicationId)}
                         title="Ver Currículo (PDF)"
-                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
                       >
                         <FileText className="h-3.5 w-3.5" />
-                      </a>
+                      </button>
                     )}
                     <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
                       {badge.icon} {item.averageScore} pts
