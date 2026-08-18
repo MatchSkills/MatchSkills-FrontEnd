@@ -1,69 +1,64 @@
-import { mockApiClient } from '@/lib/axios';
-import { RankingResponse } from '@/types/ranking';
-
-const defaultMockRanking: RankingResponse = {
-  jobId: 'job_1',
-  jobTitle: 'Desenvolvedor Frontend Senior (Next.js)',
-  totalElements: 3,
-  totalPages: 1,
-  applicants: [
-    {
-      candidateId: 'cand_1',
-      applicationId: 'app_1',
-      name: 'Lucas Silva',
-      email: 'lucas.silva@example.com',
-      status: 'completed',
-      softSkillScore: 92,
-      hardSkillScore: 88,
-      averageScore: 90,
-      evaluatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    },
-    {
-      candidateId: 'cand_2',
-      applicationId: 'app_2',
-      name: 'Mariana Costa',
-      email: 'mariana.costa@example.com',
-      status: 'completed',
-      softSkillScore: 78,
-      hardSkillScore: 95,
-      averageScore: 86.5,
-      evaluatedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-    },
-    {
-      candidateId: 'cand_3',
-      applicationId: 'app_3',
-      name: 'Carlos Eduardo',
-      email: 'carlos.edu@example.com',
-      status: 'evaluating',
-      softSkillScore: 65,
-      hardSkillScore: 58,
-      averageScore: 61.5,
-      evaluatedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    },
-  ],
-};
+import { jobApplicationApiClient } from '@/lib/axios';
+import { JobPostingApplicantMatch } from '@/types/application';
+import { RankingApplicant, RankingResponse } from '@/types/ranking';
 
 export const rankingService = {
+  /**
+   * Obtém o ranking real de candidatos para uma vaga da empresa
+   * Endpoint: GET /job-application/jobposting/{jobId}
+   * Conforme jobapplication (1).MD
+   */
   async getRankingByJob(
-    jobId: string,
+    jobId: string | number,
     minScore = 0,
     softSkill?: string,
     hardSkill?: string
   ): Promise<RankingResponse> {
-    try {
-      const params = new URLSearchParams();
-      params.set('jobId', jobId);
-      if (minScore > 0) params.set('minScore', String(minScore));
-      if (softSkill) params.set('softSkill', softSkill);
-      if (hardSkill) params.set('hardSkill', hardSkill);
-
-      const response = await mockApiClient.get<RankingResponse>(`/api/mock/ranking?${params.toString()}`);
-      return response.data;
-    } catch {
+    if (!jobId) {
       return {
-        ...defaultMockRanking,
-        jobId,
+        jobId: '',
+        jobTitle: '',
+        applicants: [],
+        totalElements: 0,
+        totalPages: 0,
       };
     }
+
+    const response = await jobApplicationApiClient.get<JobPostingApplicantMatch[]>(
+      `/job-application/jobposting/${jobId}`
+    );
+
+    const matches = Array.isArray(response.data) ? response.data : [];
+
+    const applicants: RankingApplicant[] = matches.map((item, index) => {
+      const softSkillScore = Number(item.matchSoftSkillsPercent) || 0;
+      const hardSkillScore = Number(item.matchHardSkillsPercent) || 0;
+      const averageScore = Math.round((softSkillScore + hardSkillScore) / 2);
+
+      return {
+        candidateId: item.candidateId ? String(item.candidateId) : `cand_${index + 1}`,
+        applicationId: item.applicationId ? String(item.applicationId) : '',
+        name: item.candidateName || 'Candidato',
+        email: '',
+        softSkillScore,
+        hardSkillScore,
+        averageScore,
+        status: 'completed',
+      };
+    });
+
+    const filteredApplicants =
+      minScore > 0
+        ? applicants.filter((a) => a.averageScore >= minScore)
+        : applicants;
+
+    return {
+      jobId: String(jobId),
+      jobTitle: '',
+      applicants: filteredApplicants,
+      totalElements: filteredApplicants.length,
+      totalPages: 1,
+    };
   },
 };
+
