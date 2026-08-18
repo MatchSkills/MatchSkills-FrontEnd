@@ -21,16 +21,34 @@ export interface Application {
 }
 
 /**
- * Payload esperado por POST /job-application/create conforme jobapplication.MD
+ * Payload dos dados da candidatura enviado na parte 'data' do multipart/form-data
+ * conforme jobapplication (1).MD
  */
-export interface CreateJobApplicationDTO {
+export interface JobApplicationDataPayload {
   jobpostingId: number | string;
   candidateId: number | string;
   candidateName: string;
   hardskills: string[];
+}
+
+/**
+ * Payload esperado por POST /job-application/create conforme jobapplication (1).MD
+ * Content-Type: multipart/form-data
+ */
+export interface CreateJobApplicationDTO {
+  curriculum: File | Blob;
+  data: JobApplicationDataPayload;
   candidateEmail?: string;
   jobTitle?: string;
   companyName?: string;
+}
+
+/**
+ * Payload esperado por PUT /job-application/edit-softskills conforme jobapplication (1).MD
+ */
+export interface EditSoftSkillsDTO {
+  id: number | string;
+  softskills: Record<string, number>;
 }
 
 /**

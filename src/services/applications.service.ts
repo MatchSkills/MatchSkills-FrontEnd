@@ -1,5 +1,4 @@
 import { jobApplicationApiClient, mockApiClient } from '@/lib/axios';
-import { curriculumService } from './curriculum.service';
 import {
   Application,
   CreateJobApplicationDTO,
@@ -20,25 +19,49 @@ export interface ApplyJobData {
 
 export const applicationsService = {
   /**
-   * Conforme jobapplication.MD:
+   * Conforme jobapplication (1).MD:
    * POST /job-application/create (Candidate Role)
+   * Content-Type: multipart/form-data
+   * Parts:
+   * - curriculum: File | Blob
+   * - data: { jobpostingId: Long, candidateId: Long, candidateName: String, hardskills: List<String> }
    */
-  async createApplication(data: CreateJobApplicationDTO): Promise<JobApplicationResponse> {
-    const payload = {
-      jobpostingId: isNaN(Number(data.jobpostingId)) ? data.jobpostingId : Number(data.jobpostingId),
-      candidateId: isNaN(Number(data.candidateId)) ? data.candidateId : Number(data.candidateId),
-      candidateName: data.candidateName,
-      hardskills: Array.isArray(data.hardskills) ? data.hardskills : [],
+  async createApplication(dto: CreateJobApplicationDTO): Promise<JobApplicationResponse> {
+    const formData = new FormData();
+
+    // Anexa o arquivo de currículo
+    formData.append('curriculum', dto.curriculum);
+
+    // Constrói o objeto data com IDs numéricos (Long)
+    const dataObj = {
+      jobpostingId: isNaN(Number(dto.data.jobpostingId))
+        ? dto.data.jobpostingId
+        : Number(dto.data.jobpostingId),
+      candidateId: isNaN(Number(dto.data.candidateId))
+        ? dto.data.candidateId
+        : Number(dto.data.candidateId),
+      candidateName: dto.data.candidateName,
+      hardskills: Array.isArray(dto.data.hardskills) ? dto.data.hardskills : [],
     };
+
+    // No padrão multipart para backend Spring/REST, o JSON pode ser enviado como Blob com type application/json
+    const jsonBlob = new Blob([JSON.stringify(dataObj)], { type: 'application/json' });
+    formData.append('data', jsonBlob);
+
     const response = await jobApplicationApiClient.post<JobApplicationResponse>(
       '/job-application/create',
-      payload
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
     );
     return response.data;
   },
 
   /**
-   * Conforme jobapplication.MD:
+   * Conforme jobapplication (1).MD:
    * GET /job-application/jobposting/{id} (Company Role)
    */
   async getApplicationsByJobPosting(
@@ -51,7 +74,7 @@ export const applicationsService = {
   },
 
   /**
-   * Conforme jobapplication.MD:
+   * Conforme jobapplication (1).MD:
    * PUT /job-application/edit-softskills
    */
   async editSoftSkills(
@@ -69,35 +92,31 @@ export const applicationsService = {
   },
 
   /**
-   * Fluxo composto completo para o frontend:
-   * 1. Cria candidatura via POST /job-application/create
-   * 2. Envia PDF do currículo via POST /curriculum/job-application/{id}
+   * Fluxo de candidatura do candidato no frontend:
+   * Envia a candidatura de forma atômica via POST /job-application/create (multipart/form-data)
+   * contendo o currículo (PDF) e os dados do candidato e da vaga.
    */
   async applyToJob(data: ApplyJobData): Promise<Application> {
-    // 1. Criação no JobApplication Service real
+    const curriculumFile =
+      data.curriculumFile ||
+      new Blob(['Curriculo em PDF'], { type: 'application/pdf' });
+
     const appCreated = await this.createApplication({
-      jobpostingId: data.jobId,
-      candidateId: data.candidateId,
-      candidateName: data.candidateName || 'Candidato',
-      hardskills: data.hardskills || [],
+      curriculum: curriculumFile,
+      data: {
+        jobpostingId: data.jobId,
+        candidateId: data.candidateId,
+        candidateName: data.candidateName || 'Candidato',
+        hardskills: data.hardskills || [],
+      },
       candidateEmail: data.candidateEmail,
       jobTitle: data.jobTitle,
       companyName: data.companyName,
     });
 
     const applicationId = String(appCreated.id);
-
-    // 2. Upload do Currículo (se fornecido)
-    let curriculumUrl = 'curriculo.pdf';
-    if (data.curriculumFile) {
-      try {
-        await curriculumService.uploadCurriculum(applicationId, data.curriculumFile);
-        curriculumUrl = data.curriculumFile.name;
-      } catch (uploadError) {
-        console.error('Erro ao realizar upload do currículo:', uploadError);
-        curriculumUrl = data.curriculumFile.name;
-      }
-    }
+    const curriculumFileName =
+      data.curriculumFile?.name || 'curriculo.pdf';
 
     const newApplication: Application = {
       id: applicationId,
@@ -107,10 +126,11 @@ export const applicationsService = {
       candidateEmail: data.candidateEmail || 'candidato@example.com',
       jobTitle: data.jobTitle || 'Vaga em Tecnologia',
       companyName: data.companyName || 'Empresa Parceira',
-      curriculumUrl,
+      curriculumUrl: curriculumFileName,
       status: 'pending',
       telegramLink: `https://t.me/MatchSkillsEvaluationBot?start=${applicationId}`,
-      hardskills: data.hardskills || [],
+      hardskills: data.hardskills || appCreated.hardskills || [],
+      softskills: appCreated.softskills,
       createdAt: appCreated.createAt || new Date().toISOString(),
       createAt: appCreated.createAt || new Date().toISOString(),
     };
