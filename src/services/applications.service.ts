@@ -138,22 +138,95 @@ export const applicationsService = {
     return newApplication;
   },
 
-  async getMyApplications(candidateId: string): Promise<Application[]> {
-    try {
-      const response = await mockApiClient.get<Application[]>(
-        `/api/mock/applications?candidateId=${candidateId}`
-      );
-      return response.data;
-    } catch {
-      return [];
-    }
+  /**
+   * Obtém as candidaturas de um candidato via endpoint real:
+   * GET /job-application/candidate/{id}
+   */
+  async getApplicationsByCandidate(candidateId: string | number): Promise<Application[]> {
+    const response = await jobApplicationApiClient.get<any[]>(
+      `/job-application/candidate/${candidateId}`
+    );
+    const data = response.data;
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray((data as any)?.content)
+      ? (data as any).content
+      : [];
+
+    return list.map((raw: any) => {
+      const id = String(raw.id || raw.applicationId || '');
+      const jobId = String(raw.jobpostingId || raw.jobId || '');
+      const softSkillScore =
+        raw.softSkillScore ?? raw.matchSoftSkillsPercent;
+      const hardSkillScore =
+        raw.hardSkillScore ?? raw.matchHardSkillsPercent;
+      
+      let averageScore = raw.averageScore;
+      if (
+        averageScore === undefined &&
+        softSkillScore !== undefined &&
+        hardSkillScore !== undefined
+      ) {
+        averageScore = Math.round((Number(softSkillScore) + Number(hardSkillScore)) / 2);
+      }
+
+      const status: Application['status'] =
+        raw.status || (averageScore !== undefined ? 'completed' : 'pending');
+
+      return {
+        id,
+        jobId,
+        candidateId: String(raw.candidateId || candidateId),
+        candidateName: raw.candidateName || 'Candidato',
+        candidateEmail: raw.candidateEmail || '',
+        jobTitle: raw.jobTitle || raw.job?.title || (jobId ? `Vaga #${jobId}` : `Candidatura #${id}`),
+        companyName:
+          raw.companyName || raw.company?.name || raw.job?.companyName || 'Empresa',
+        curriculumUrl: raw.curriculumUrl || raw.curriculumFileName || '',
+        status,
+        telegramLink:
+          raw.telegramLink || `https://t.me/MatchSkillsBot?start=${id}_${jobId}`,
+        softSkillScore: softSkillScore !== undefined ? Number(softSkillScore) : undefined,
+        hardSkillScore: hardSkillScore !== undefined ? Number(hardSkillScore) : undefined,
+        averageScore: averageScore !== undefined ? Number(averageScore) : undefined,
+        hardskills: Array.isArray(raw.hardskills) ? raw.hardskills : [],
+        softskills: raw.softskills,
+        createdAt: raw.createAt || raw.createdAt || new Date().toISOString(),
+        createAt: raw.createAt || raw.createdAt || new Date().toISOString(),
+      };
+    });
+  },
+
+  async getMyApplications(candidateId: string | number): Promise<Application[]> {
+    return this.getApplicationsByCandidate(candidateId);
   },
 
   async getApplicationById(id: string): Promise<Application> {
-    const response = await mockApiClient.get<Application>(
-      `/api/mock/applications?applicationId=${id}`
+    const response = await jobApplicationApiClient.get<any>(
+      `/job-application/${id}`
     );
-    return response.data;
+    const raw = response.data;
+    const appId = String(raw.id || id);
+    const jobId = String(raw.jobpostingId || raw.jobId || '');
+    return {
+      id: appId,
+      jobId,
+      candidateId: String(raw.candidateId || ''),
+      candidateName: raw.candidateName || 'Candidato',
+      candidateEmail: raw.candidateEmail || '',
+      jobTitle: raw.jobTitle || `Vaga #${jobId}`,
+      companyName: raw.companyName || 'Empresa',
+      curriculumUrl: raw.curriculumUrl || '',
+      status: raw.status || 'pending',
+      telegramLink: raw.telegramLink || `https://t.me/MatchSkillsBot?start=${appId}_${jobId}`,
+      softSkillScore: raw.softSkillScore ?? raw.matchSoftSkillsPercent,
+      hardSkillScore: raw.hardSkillScore ?? raw.matchHardSkillsPercent,
+      averageScore: raw.averageScore,
+      hardskills: raw.hardskills || [],
+      softskills: raw.softskills,
+      createdAt: raw.createAt || raw.createdAt || new Date().toISOString(),
+      createAt: raw.createAt || raw.createdAt || new Date().toISOString(),
+    };
   },
 
   async triggerBotEndConversation(applicationId: string): Promise<{

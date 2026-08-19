@@ -20,14 +20,20 @@ import {
 import { toast } from 'sonner';
 
 export default function MyApplicationsPage() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchApplications = async () => {
+    if (!user?.id) {
+      if (!isAuthLoading) {
+        setIsLoading(false);
+      }
+      return;
+    }
     setIsLoading(true);
     try {
-      const data = await applicationsService.getMyApplications(user?.id || 'cand_1');
+      const data = await applicationsService.getMyApplications(user.id);
       setApplications(data);
     } catch {
       toast.error('Erro ao carregar candidaturas.');
@@ -37,8 +43,14 @@ export default function MyApplicationsPage() {
   };
 
   useEffect(() => {
-    fetchApplications();
-  }, [user?.id]);
+    if (!isAuthLoading) {
+      if (user?.id) {
+        fetchApplications();
+      } else {
+        setIsLoading(false);
+      }
+    }
+  }, [user?.id, isAuthLoading]);
 
   const handleSimulateBotEnd = async (appId: string) => {
     toast.info('Simulando resposta da IA do Telegram...');
