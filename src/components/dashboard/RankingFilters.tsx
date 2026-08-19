@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { RankingFilters } from '@/types/ranking';
+import { AVAILABLE_SOFT_SKILLS } from '@/constants/skills';
 import { Filter, RefreshCw, SlidersHorizontal, Sparkles } from 'lucide-react';
 
 interface RankingFiltersProps {
@@ -49,10 +50,11 @@ export const RankingFiltersComponent: React.FC<RankingFiltersProps> = ({
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium outline-none focus:border-[#1e3a5f]"
           >
             <option value="">Todas as Soft Skills</option>
-            <option value="Comunicação">Comunicação</option>
-            <option value="Liderança">Liderança</option>
-            <option value="Resolução de Problemas">Resolução de Problemas</option>
-            <option value="Proatividade">Proatividade</option>
+            {AVAILABLE_SOFT_SKILLS.map((skill) => (
+              <option key={skill} value={skill}>
+                {skill}
+              </option>
+            ))}
           </select>
         </div>
 

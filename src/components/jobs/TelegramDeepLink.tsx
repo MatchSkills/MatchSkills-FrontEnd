@@ -14,7 +14,7 @@ export const TelegramDeepLink: React.FC<TelegramDeepLinkProps> = ({ application,
   const [copied, setCopied] = useState(false);
   const telegramUrl =
     application.telegramLink ||
-    `https://t.me/MatchSkillsEvaluationBot?start=${application.id}`;
+    `https://t.me/MatchSkillsEvaluationBot?start=${application.id}_${application.jobId}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(telegramUrl);

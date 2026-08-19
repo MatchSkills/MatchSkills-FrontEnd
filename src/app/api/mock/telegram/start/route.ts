@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { applicationId } = body;
+    const { applicationId, jobId } = body;
 
-    const telegramLink = `https://t.me/MatchSkillsEvaluationBot?start=${applicationId || 'demo'}`;
+    const telegramLink = `https://t.me/MatchSkillsEvaluationBot?start=${applicationId || 'demo'}_${jobId || 'job_1'}`;
 
     return NextResponse.json({
       applicationId,

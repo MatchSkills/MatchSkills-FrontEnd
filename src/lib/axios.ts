@@ -3,7 +3,6 @@ import { ENV } from './env';
 
 export const apiClient = axios.create({
   baseURL: ENV.API_URL,
-  timeout: 15000, // 15s timeout para lidar com cold-start do Render
   headers: {
     'Content-Type': 'application/json',
   },
@@ -11,7 +10,6 @@ export const apiClient = axios.create({
 
 export const jobPostingApiClient = axios.create({
   baseURL: ENV.JOB_POSTING_API_URL,
-  timeout: 15000, // 15s timeout para lidar com cold-start do Render
   headers: {
     'Content-Type': 'application/json',
   },
@@ -19,7 +17,6 @@ export const jobPostingApiClient = axios.create({
 
 export const jobApplicationApiClient = axios.create({
   baseURL: ENV.JOB_APPLICATION_API_URL,
-  timeout: 15000, // 15s timeout para lidar com cold-start do Render
   headers: {
     'Content-Type': 'application/json',
   },
@@ -27,7 +24,6 @@ export const jobApplicationApiClient = axios.create({
 
 export const mockApiClient = axios.create({
   baseURL: '',
-  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },

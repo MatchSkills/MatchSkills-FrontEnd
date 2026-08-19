@@ -170,7 +170,7 @@ export default function MyApplicationsPage() {
                           </button>
                         )}
                         <a
-                          href={app.telegramLink || `https://t.me/MatchSkillsEvaluationBot?start=${app.id}`}
+                          href={app.telegramLink || `https://t.me/MatchSkillsEvaluationBot?start=${app.id}_${app.jobId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 font-bold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors shadow-sm"

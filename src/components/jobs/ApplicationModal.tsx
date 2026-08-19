@@ -53,7 +53,6 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({ job, onClose
       candidateEmail: user.email || '',
       jobTitle: job.title,
       companyName: job.companyName,
-      hardskills: job.hardSkills || job.targetHardskills || [],
       curriculumFile: selectedFile,
     });
 

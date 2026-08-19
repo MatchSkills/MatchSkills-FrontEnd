@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { jobsService } from '@/services/jobs.service';
 import { Job } from '@/types/job';
+import { SoftSkillSelect } from '@/components/jobs/SoftSkillSelect';
 import { Code2, Edit, Save, Sparkles, Star, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,8 +23,6 @@ export default function EditJobPage() {
   const [hardSkills, setHardSkills] = useState<string[]>([]);
   const [newHardSkill, setNewHardSkill] = useState('');
   const [softSkills, setSoftSkills] = useState<Record<string, number>>({});
-  const [newSoftSkillName, setNewSoftSkillName] = useState('');
-  const [newSoftSkillLevel, setNewSoftSkillLevel] = useState(4);
 
   useEffect(() => {
     if (!id) return;
@@ -57,13 +56,11 @@ export default function EditJobPage() {
     setHardSkills(hardSkills.filter((s) => s !== skill));
   };
 
-  const handleAddSoftSkill = () => {
-    if (!newSoftSkillName.trim()) return;
-    setSoftSkills({
-      ...softSkills,
-      [newSoftSkillName.trim()]: newSoftSkillLevel,
-    });
-    setNewSoftSkillName('');
+  const handleAddSoftSkill = (skillName: string, level: number) => {
+    setSoftSkills((prev) => ({
+      ...prev,
+      [skillName]: level,
+    }));
   };
 
   const handleRemoveSoftSkill = (skillName: string) => {
@@ -218,36 +215,20 @@ export default function EditJobPage() {
 
           {/* Soft Skills Section */}
           <div className="space-y-3 pt-4 border-t border-slate-100">
-            <label className="block text-xs font-bold text-slate-900 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-500" /> Soft Skills (Nível 1 a 5)
-            </label>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="text"
-                placeholder="Nome da Soft Skill"
-                value={newSoftSkillName}
-                onChange={(e) => setNewSoftSkillName(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium outline-none"
-              />
-              <select
-                value={newSoftSkillLevel}
-                onChange={(e) => setNewSoftSkillLevel(Number(e.target.value))}
-                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
-              >
-                {[1, 2, 3, 4, 5].map((lvl) => (
-                  <option key={lvl} value={lvl}>
-                    Nível {lvl}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={handleAddSoftSkill}
-                className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white"
-              >
-                Adicionar
-              </button>
+            <div>
+              <label className="block text-xs font-bold text-slate-900 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-amber-500" /> Soft Skills (Nível 1 a 5)
+              </label>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Selecione as competências comportamentais requeridas e defina o nível alvo esperado.
+              </p>
             </div>
+
+            <SoftSkillSelect
+              existingSkills={softSkills}
+              onAddSkill={handleAddSoftSkill}
+            />
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               {Object.entries(softSkills).map(([skillName, level]) => (
                 <div

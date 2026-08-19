@@ -28,7 +28,7 @@ export interface JobApplicationDataPayload {
   jobpostingId: number | string;
   candidateId: number | string;
   candidateName: string;
-  hardskills: string[];
+  hardskills?: string[];
 }
 
 /**
@@ -59,7 +59,7 @@ export interface JobApplicationResponse {
   jobpostingId: number | string;
   candidateId: number | string;
   candidateName: string;
-  hardskills: string[];
+  hardskills?: string[];
   softskills?: Record<string, number>;
   createAt: string;
 }
