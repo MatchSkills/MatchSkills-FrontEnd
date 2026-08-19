@@ -156,6 +156,18 @@ export const applicationsService = {
     return list.map((raw: any) => {
       const id = String(raw.id || raw.applicationId || '');
       const jobId = String(raw.jobpostingId || raw.jobId || '');
+      
+      const rawSoftskills = raw.softskills ?? raw.softSkills ?? null;
+      // Para saber se o status da conversa foi finalizado, basta verificar se a softskill do candidato naquela vaga não é null
+      const hasSoftSkills =
+        rawSoftskills !== null &&
+        rawSoftskills !== undefined &&
+        (typeof rawSoftskills === 'object'
+          ? Object.keys(rawSoftskills).length > 0
+          : Boolean(rawSoftskills));
+
+      const status: Application['status'] = hasSoftSkills ? 'completed' : 'pending';
+
       const softSkillScore =
         raw.softSkillScore ?? raw.matchSoftSkillsPercent;
       const hardSkillScore =
@@ -169,9 +181,6 @@ export const applicationsService = {
       ) {
         averageScore = Math.round((Number(softSkillScore) + Number(hardSkillScore)) / 2);
       }
-
-      const status: Application['status'] =
-        raw.status || (averageScore !== undefined ? 'completed' : 'pending');
 
       return {
         id,
@@ -190,7 +199,7 @@ export const applicationsService = {
         hardSkillScore: hardSkillScore !== undefined ? Number(hardSkillScore) : undefined,
         averageScore: averageScore !== undefined ? Number(averageScore) : undefined,
         hardskills: Array.isArray(raw.hardskills) ? raw.hardskills : [],
-        softskills: raw.softskills,
+        softskills: rawSoftskills,
         createdAt: raw.createAt || raw.createdAt || new Date().toISOString(),
         createAt: raw.createAt || raw.createdAt || new Date().toISOString(),
       };

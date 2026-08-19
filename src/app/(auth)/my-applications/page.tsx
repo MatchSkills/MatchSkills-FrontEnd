@@ -4,16 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { applicationsService } from '@/services/applications.service';
 import { Application } from '@/types/application';
-import { formatDate, getBarsBadgeColor } from '@/utils/helpers';
+import { formatDate } from '@/utils/helpers';
 import {
-  Award,
-  Bot,
   Building2,
   Calendar,
   ExternalLink,
   FileText,
   MessageSquare,
-  Play,
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
@@ -52,38 +49,30 @@ export default function MyApplicationsPage() {
     }
   }, [user?.id, isAuthLoading]);
 
-  const handleSimulateBotEnd = async (appId: string) => {
-    toast.info('Simulando resposta da IA do Telegram...');
-    try {
-      await applicationsService.triggerBotEndConversation(appId);
-      toast.success('Avaliação concluída via Método BARS!');
-      await fetchApplications();
-    } catch {
-      toast.error('Erro ao simular bot.');
-    }
-  };
+  const getStatusBadge = (app: Application) => {
+    // Para saber se o status da conversa foi finalizado, basta verificar se a softskill não é null
+    const hasSoftSkills =
+      app.softskills !== null &&
+      app.softskills !== undefined &&
+      (typeof app.softskills === 'object'
+        ? Object.keys(app.softskills).length > 0
+        : Boolean(app.softskills));
 
-  const getStatusBadge = (status: Application['status']) => {
-    switch (status) {
-      case 'completed':
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
-            <Sparkles className="h-3.5 w-3.5 text-emerald-600" /> Avaliada (BARS)
-          </span>
-        );
-      case 'evaluating':
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
-            <Bot className="h-3.5 w-3.5 text-amber-600" /> Em avaliação
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-100 px-3 py-1 rounded-full">
-            <MessageSquare className="h-3.5 w-3.5 text-blue-600" /> Aguardando Telegram
-          </span>
-        );
+    const isFinalized = app.status === 'completed' || hasSoftSkills;
+
+    if (isFinalized) {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+          <Sparkles className="h-3.5 w-3.5 text-emerald-600" /> Conversa Finalizada
+        </span>
+      );
     }
+
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
+        <MessageSquare className="h-3.5 w-3.5 text-blue-600" /> Aguardando Telegram
+      </span>
+    );
   };
 
   return (
@@ -95,14 +84,14 @@ export default function MyApplicationsPage() {
             <FileText className="h-6 w-6 text-[#1e3a5f]" /> Minhas Candidaturas
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Acompanhe o status e a pontuação obtida na avaliação do Bot de IA no Telegram.
+            Acompanhe o status das suas candidaturas e a realização da entrevista com o Bot IA no Telegram.
           </p>
         </div>
 
         <button
           onClick={fetchApplications}
           disabled={isLoading}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-[#1e3a5f] bg-blue-50 px-4 py-2.5 rounded-xl hover:bg-blue-100 transition-colors shrink-0"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-[#1e3a5f] bg-blue-50 px-4 py-2.5 rounded-xl hover:bg-blue-100 transition-colors shrink-0 cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Atualizar Status
         </button>
@@ -130,69 +119,42 @@ export default function MyApplicationsPage() {
                   <th className="py-4 px-6">Vaga / Empresa</th>
                   <th className="py-4 px-6">Data Envio</th>
                   <th className="py-4 px-6">Status IA</th>
-                  <th className="py-4 px-6">Pontuação (BARS)</th>
                   <th className="py-4 px-6 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {applications.map((app) => {
-                  const badge = app.averageScore ? getBarsBadgeColor(app.averageScore) : null;
-                  return (
-                    <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-4 px-6">
-                        <p className="font-bold text-slate-900">{app.jobTitle}</p>
-                        <p className="text-slate-500 flex items-center gap-1 mt-0.5">
-                          <Building2 className="h-3 w-3" /> {app.companyName}
-                        </p>
-                      </td>
+                {applications.map((app) => (
+                  <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-4 px-6">
+                      <p className="font-bold text-slate-900">{app.jobTitle}</p>
+                      <p className="text-slate-500 flex items-center gap-1 mt-0.5">
+                        <Building2 className="h-3 w-3" /> {app.companyName}
+                      </p>
+                    </td>
 
-                      <td className="py-4 px-6 text-slate-600 font-medium whitespace-nowrap">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                          {formatDate(app.createdAt)}
-                        </span>
-                      </td>
+                    <td className="py-4 px-6 text-slate-600 font-medium whitespace-nowrap">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                        {formatDate(app.createdAt)}
+                      </span>
+                    </td>
 
-                      <td className="py-4 px-6 whitespace-nowrap">
-                        {getStatusBadge(app.status)}
-                      </td>
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      {getStatusBadge(app)}
+                    </td>
 
-                      <td className="py-4 px-6 whitespace-nowrap">
-                        {app.status === 'completed' && app.averageScore !== undefined ? (
-                          <div className="flex items-center gap-2">
-                            <span className={`font-bold px-2.5 py-1 rounded-full border ${badge?.bg} ${badge?.text} ${badge?.border}`}>
-                              {badge?.icon} Média {app.averageScore} pts
-                            </span>
-                            <div className="text-[10px] text-slate-500">
-                              Soft: {app.softSkillScore} | Hard: {app.hardSkillScore}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 font-medium">Pendente avaliação</span>
-                        )}
-                      </td>
-
-                      <td className="py-4 px-6 text-right whitespace-nowrap space-x-2">
-                        {app.status !== 'completed' && (
-                          <button
-                            onClick={() => handleSimulateBotEnd(app.id)}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors border border-amber-200"
-                          >
-                            <Play className="h-3 w-3" /> Simular Resposta IA
-                          </button>
-                        )}
-                        <a
-                          href={app.telegramLink || `https://t.me/MatchSkillsBot?start=${app.id}_${app.jobId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-bold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
-                        >
-                          Telegram <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </td>
-                    </tr>
-                  );
-                })}
+                    <td className="py-4 px-6 text-right whitespace-nowrap">
+                      <a
+                        href={app.telegramLink || `https://t.me/MatchSkillsBot?start=${app.id}_${app.jobId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-bold text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 rounded-lg transition-colors shadow-sm cursor-pointer"
+                      >
+                        Telegram <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
