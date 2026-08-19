@@ -13,7 +13,7 @@ let mockApplications: Application[] = [
     companyName: 'TechCorp Solutions',
     curriculumUrl: 'curriculum_lucas.pdf',
     status: 'completed',
-    telegramLink: 'https://t.me/MatchSkillsEvaluationBot?start=app_1_job_1',
+    telegramLink: 'https://t.me/MatchSkillsBot?start=app_1_job_1',
     softSkillScore: 92,
     hardSkillScore: 88,
     averageScore: 90,
@@ -29,7 +29,7 @@ let mockApplications: Application[] = [
     companyName: 'TechCorp Solutions',
     curriculumUrl: 'curriculum_mariana.pdf',
     status: 'completed',
-    telegramLink: 'https://t.me/MatchSkillsEvaluationBot?start=app_2_job_1',
+    telegramLink: 'https://t.me/MatchSkillsBot?start=app_2_job_1',
     softSkillScore: 78,
     hardSkillScore: 95,
     averageScore: 86.5,
@@ -45,7 +45,7 @@ let mockApplications: Application[] = [
     companyName: 'TechCorp Solutions',
     curriculumUrl: 'curriculum_carlos.pdf',
     status: 'evaluating',
-    telegramLink: 'https://t.me/MatchSkillsEvaluationBot?start=app_3_job_1',
+    telegramLink: 'https://t.me/MatchSkillsBot?start=app_3_job_1',
     softSkillScore: 65,
     hardSkillScore: 58,
     averageScore: 61.5,
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     const newAppId = `app_${Date.now()}`;
     const newJobId = jobId || 'job_1';
-    const telegramLink = `https://t.me/MatchSkillsEvaluationBot?start=${newAppId}_${newJobId}`;
+    const telegramLink = `https://t.me/MatchSkillsBot?start=${newAppId}_${newJobId}`;
 
     const newApplication: Application = {
       id: newAppId,

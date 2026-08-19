@@ -128,7 +128,7 @@ export const applicationsService = {
       companyName: data.companyName || 'Empresa Parceira',
       curriculumUrl: curriculumFileName,
       status: 'pending',
-      telegramLink: `https://t.me/MatchSkillsEvaluationBot?start=${applicationId}_${data.jobId}`,
+      telegramLink: `https://t.me/MatchSkillsBot?start=${applicationId}_${data.jobId}`,
       hardskills: data.hardskills || appCreated.hardskills || [],
       softskills: appCreated.softskills,
       createdAt: appCreated.createAt || new Date().toISOString(),

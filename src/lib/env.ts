@@ -19,7 +19,7 @@ export const ENV = {
     process.env.NEXT_PUBLIC_JOB_APPLICATION_API_URL,
     'https://matchskills-jobapplication-service.onrender.com'
   ),
-  TELEGRAM_BOT_USERNAME: process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'MatchSkillsEvaluationBot',
+  TELEGRAM_BOT_USERNAME: process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'MatchSkillsBot',
   IS_DEV: process.env.NODE_ENV === 'development',
 };
 

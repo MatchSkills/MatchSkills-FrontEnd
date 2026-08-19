@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { applicationId, jobId } = body;
 
-    const telegramLink = `https://t.me/MatchSkillsEvaluationBot?start=${applicationId || 'demo'}_${jobId || 'job_1'}`;
+    const telegramLink = `https://t.me/MatchSkillsBot?start=${applicationId || 'demo'}_${jobId || 'job_1'}`;
 
     return NextResponse.json({
       applicationId,
