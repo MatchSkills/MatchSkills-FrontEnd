@@ -49,8 +49,7 @@ export default function MyApplicationsPage() {
     }
   }, [user?.id, isAuthLoading]);
 
-  const getStatusBadge = (app: Application) => {
-    // Para saber se o status da conversa foi finalizado, basta verificar se a softskill não é null
+  const isAppFinalized = (app: Application): boolean => {
     const hasSoftSkills =
       app.softskills !== null &&
       app.softskills !== undefined &&
@@ -58,9 +57,11 @@ export default function MyApplicationsPage() {
         ? Object.keys(app.softskills).length > 0
         : Boolean(app.softskills));
 
-    const isFinalized = app.status === 'completed' || hasSoftSkills;
+    return app.status === 'completed' || hasSoftSkills;
+  };
 
-    if (isFinalized) {
+  const getStatusBadge = (app: Application) => {
+    if (isAppFinalized(app)) {
       return (
         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
           <Sparkles className="h-3.5 w-3.5 text-emerald-600" /> Conversa Finalizada
@@ -123,38 +124,47 @@ export default function MyApplicationsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {applications.map((app) => (
-                  <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-6">
-                      <p className="font-bold text-slate-900">{app.jobTitle}</p>
-                      <p className="text-slate-500 flex items-center gap-1 mt-0.5">
-                        <Building2 className="h-3 w-3" /> {app.companyName}
-                      </p>
-                    </td>
+                {applications.map((app) => {
+                  const finalized = isAppFinalized(app);
+                  return (
+                    <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-4 px-6">
+                        <p className="font-bold text-slate-900">{app.jobTitle}</p>
+                        <p className="text-slate-500 flex items-center gap-1 mt-0.5">
+                          <Building2 className="h-3 w-3" /> {app.companyName}
+                        </p>
+                      </td>
 
-                    <td className="py-4 px-6 text-slate-600 font-medium whitespace-nowrap">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        {formatDate(app.createdAt)}
-                      </span>
-                    </td>
+                      <td className="py-4 px-6 text-slate-600 font-medium whitespace-nowrap">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                          {formatDate(app.createdAt)}
+                        </span>
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      {getStatusBadge(app)}
-                    </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        {getStatusBadge(app)}
+                      </td>
 
-                    <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <a
-                        href={app.telegramLink || `https://t.me/MatchSkillsBot?start=${app.id}_${app.jobId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 font-bold text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 rounded-lg transition-colors shadow-sm cursor-pointer"
-                      >
-                        Telegram <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        {!finalized ? (
+                          <a
+                            href={app.telegramLink || `https://t.me/MatchSkillsBot?start=${app.id}_${app.jobId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 font-bold text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 rounded-lg transition-colors shadow-sm cursor-pointer"
+                          >
+                            Telegram <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        ) : (
+                          <span className="text-slate-400 font-medium text-xs">
+                            Entrevista realizada
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
