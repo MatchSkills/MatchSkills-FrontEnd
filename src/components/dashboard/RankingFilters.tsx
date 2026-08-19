@@ -2,14 +2,15 @@
 
 import React from 'react';
 import { RankingFilters } from '@/types/ranking';
-import { AVAILABLE_SOFT_SKILLS } from '@/constants/skills';
-import { Filter, RefreshCw, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { RefreshCw, SlidersHorizontal } from 'lucide-react';
 
 interface RankingFiltersProps {
   filters: RankingFilters;
   onFilterChange: (newFilters: RankingFilters) => void;
   onRefresh: () => void;
   isLoading: boolean;
+  softSkills?: string[];
+  hardSkills?: string[];
 }
 
 export const RankingFiltersComponent: React.FC<RankingFiltersProps> = ({
@@ -17,6 +18,8 @@ export const RankingFiltersComponent: React.FC<RankingFiltersProps> = ({
   onFilterChange,
   onRefresh,
   isLoading,
+  softSkills = [],
+  hardSkills = [],
 }) => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
@@ -29,7 +32,7 @@ export const RankingFiltersComponent: React.FC<RankingFiltersProps> = ({
         <button
           onClick={onRefresh}
           disabled={isLoading}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1e3a5f] bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1e3a5f] bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 cursor-pointer"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           Atualizar Ranking
@@ -40,17 +43,20 @@ export const RankingFiltersComponent: React.FC<RankingFiltersProps> = ({
         {/* Soft Skill Dropdown */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Soft Skill Específica
+            Soft Skill da Vaga
           </label>
           <select
             value={filters.softSkill || ''}
             onChange={(e) =>
               onFilterChange({ ...filters, softSkill: e.target.value || undefined })
             }
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium outline-none focus:border-[#1e3a5f]"
+            disabled={isLoading || softSkills.length === 0}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium outline-none focus:border-[#1e3a5f] disabled:opacity-50 cursor-pointer"
           >
-            <option value="">Todas as Soft Skills</option>
-            {AVAILABLE_SOFT_SKILLS.map((skill) => (
+            <option value="">
+              {softSkills.length > 0 ? 'Todas as Soft Skills' : 'Nenhuma Soft Skill cadastrada'}
+            </option>
+            {softSkills.map((skill) => (
               <option key={skill} value={skill}>
                 {skill}
               </option>
@@ -61,20 +67,24 @@ export const RankingFiltersComponent: React.FC<RankingFiltersProps> = ({
         {/* Hard Skill Dropdown */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Hard Skill Específica
+            Hard Skill da Vaga
           </label>
           <select
             value={filters.hardSkill || ''}
             onChange={(e) =>
               onFilterChange({ ...filters, hardSkill: e.target.value || undefined })
             }
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium outline-none focus:border-[#1e3a5f]"
+            disabled={isLoading || hardSkills.length === 0}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium outline-none focus:border-[#1e3a5f] disabled:opacity-50 cursor-pointer"
           >
-            <option value="">Todas as Hard Skills</option>
-            <option value="Next.js">Next.js</option>
-            <option value="React">React</option>
-            <option value="TypeScript">TypeScript</option>
-            <option value="Tailwind CSS">Tailwind CSS</option>
+            <option value="">
+              {hardSkills.length > 0 ? 'Todas as Hard Skills' : 'Nenhuma Hard Skill cadastrada'}
+            </option>
+            {hardSkills.map((skill) => (
+              <option key={skill} value={skill}>
+                {skill}
+              </option>
+            ))}
           </select>
         </div>
 

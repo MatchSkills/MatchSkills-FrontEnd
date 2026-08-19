@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useJobs } from '@/hooks/useJobs';
 import { useRanking } from '@/hooks/useRanking';
 import { RankingFiltersComponent } from '@/components/dashboard/RankingFilters';
 import { RankingTable } from '@/components/dashboard/RankingTable';
 import { RankingSkeleton } from '@/components/common/LoadingSkeleton';
-import { Briefcase, Building2, ChevronDown, LayoutDashboard, PlusCircle, Sparkles } from 'lucide-react';
+import { Briefcase, Building2, ChevronDown, LayoutDashboard, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -34,6 +34,52 @@ export default function DashboardPage() {
   const selectedJobObj = jobs.find((j) => j.id === jobId) || jobs[0];
   const isLoading = isAuthLoading || isJobsLoading || isRankingLoading;
 
+  // Extrai as soft skills dinamicamente da vaga selecionada vinda de /jobs/company/...
+  const availableSoftSkills = React.useMemo(() => {
+    if (!selectedJobObj) return [];
+    const source = selectedJobObj.softSkills || selectedJobObj.targetSoftskills;
+    if (!source) return [];
+    if (Array.isArray(source)) return source.map(String);
+    if (typeof source === 'object') return Object.keys(source);
+    return [];
+  }, [selectedJobObj]);
+
+  // Extrai as hard skills dinamicamente da vaga selecionada vinda de /jobs/company/...
+  const availableHardSkills = React.useMemo(() => {
+    if (!selectedJobObj) return [];
+    const source = selectedJobObj.hardSkills || selectedJobObj.targetHardskills;
+    if (!source) return [];
+    if (Array.isArray(source)) return source.map(String);
+    if (typeof source === 'object') return Object.keys(source);
+    return [];
+  }, [selectedJobObj]);
+
+  // Limpa os filtros de skills caso as skills selecionadas anteriormente não existam na nova vaga
+  React.useEffect(() => {
+    setFilters((prev) => {
+      let changed = false;
+      let newSoft = prev.softSkill;
+      let newHard = prev.hardSkill;
+
+      if (newSoft && !availableSoftSkills.includes(newSoft)) {
+        newSoft = undefined;
+        changed = true;
+      }
+      if (newHard && !availableHardSkills.includes(newHard)) {
+        newHard = undefined;
+        changed = true;
+      }
+
+      if (changed) {
+        return {
+          ...prev,
+          softSkill: newSoft,
+          hardSkill: newHard,
+        };
+      }
+      return prev;
+    });
+  }, [availableSoftSkills, availableHardSkills, setFilters]);
 
   return (
     <div className="space-y-8">
@@ -101,6 +147,8 @@ export default function DashboardPage() {
         onFilterChange={setFilters}
         onRefresh={refreshRanking}
         isLoading={isLoading}
+        softSkills={availableSoftSkills}
+        hardSkills={availableHardSkills}
       />
 
       {/* 3-Column Ranking Table */}
