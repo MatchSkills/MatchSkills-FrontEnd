@@ -63,24 +63,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Stats Banner */}
-        <section className="bg-white border-y border-slate-200 py-10 shadow-sm">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="space-y-1">
-              <p className="text-3xl sm:text-4xl font-extrabold text-[#1e3a5f]">12k+</p>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Empresas Cadastradas</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-3xl sm:text-4xl font-extrabold text-blue-600">180k+</p>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Candidatos Avaliados</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-3xl sm:text-4xl font-extrabold text-emerald-600">94%</p>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Match Rate Assertivo</p>
-            </div>
-          </div>
-        </section>
-
         {/* 3 Main Features */}
         <section className="py-16 lg:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center space-y-3 max-w-2xl mx-auto">
